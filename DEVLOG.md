@@ -318,3 +318,14 @@ the local server serves extension-less pages like Pages.
   after closing, the teacher's room view stayed "open" without a Hub pass – now it returns to Rooms with a note.
 
 **Not verified**: a real phone; a whole class at once; the QR scanned by a phone camera.
+
+## F4 live (2026-11-21, approved by András)
+
+- `functions:wordnerd` deployed: the seven room callables created, the others updated.
+- `main` pushed (`c0811c9`); Cloudflare Pages built it by itself in about 30 s. Note: Pages answers 200 for an
+  unknown path (it serves the home page), so a live check must look for new content, not only the status.
+- Checks: home page has the join box; `/play` is the student page and loads without console errors with
+  `?code=` prefilled; `/js/play.js`, `/js/stars.js`, `/css/play.css`, `/engines/rooms/rooms.js` served; the teacher
+  page has the room set-up; the room callables refuse unauthenticated calls with `sign-in`.
+- Not tried live: opening a room and joining (needs András's teacher account; a test join would create an anonymous
+  account in the production project).
