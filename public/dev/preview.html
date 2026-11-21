@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&family=Tenor+Sans&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/games.css">
   <link rel="stylesheet" href="/dev/preview.css">
 </head>
 <body>
@@ -24,9 +25,13 @@
       <div class="seed">
         <label>Seed <input id="seed" type="text" value="demo:0" spellcheck="false"></label>
         <button type="button" class="btn" id="new-seed">New seed</button>
+        <button type="button" class="btn" id="restart">Restart</button>
       </div>
     </section>
-    <section id="game" class="panel game" aria-live="polite"></section>
+    <section class="panel game">
+      <div id="game"></div>
+      <p id="result" class="result"></p>
+    </section>
     <details class="panel">
       <summary>Puzzle JSON</summary>
       <pre id="json"></pre>

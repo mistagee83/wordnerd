@@ -63,3 +63,40 @@
 
 **Next**
 - F2 (analysis: schema, prompt, `analyzeText`, credits) waits for approval.
+
+## F1 revision – game design after András's review (2026-11-21)
+
+**Feedback (András) and decisions**
+- Memory: more striking cards, always a square board, cards that really flip → square boards 3×3–6×6 (odd boards
+  have a logo tile in the centre), 3D flip, wooden backs with the logo.
+- Matching: too weak → definitions by default; drag the word onto its definition card (chosen from three concepts).
+- Word search: drag instead of first/last click → pointer drag (mouse and touch), tap-tap still works.
+- Crossword: jump to the next cell after a letter → auto-advance, Backspace back, arrows, paste fills on.
+- Hangman: needs a picture that shows trouble → balloons (chosen from balloons / chalk gallows / melting snowman).
+- Gapfill: should be a connected text with a drag-and-drop word bank and a check at the end, as in the old plan
+  → new list field `cloze` (text with `{{n}}` gaps + gap list); the sentence version is parked for later.
+- Drowning: needs a picture → red British telephone box filling with water (chosen from three concepts).
+- Graphics now, as SVG/CSS, not in F4 (András).
+
+**Built**
+- Engines: `memory.js` (board setting, logo tile), `matching.js` (`targets` + `bank`), `gapfill.js` (cloze parser,
+  word bank with extra words, `checkAll`), `wordsearch.js` (`lineCells` for drag highlighting).
+- Game UIs as reusable modules in `public/js/games/` (one per game, plus `ui.js` helpers and `dnd.js` drag and drop
+  with tap fallback), styles in `public/css/games.css`. Each calls `onFinish({ score, max, misses })`.
+- Preview rewritten to mount those modules; `?game=<id>` opens a game directly; Restart button; result line.
+- Sample list: a `cloze` text with 11 gaps.
+
+**Verified**
+- `npm test`: 33 pass (new: square boards and logo tile, short-list fallback, matching shape, cloze order/bank/extra
+  words, check at the end, broken cloze texts, `lineCells`).
+- Built-in browser, real pointer input: memory full game by script (result with misses), matching drag (correct
+  snaps in, wrong flies back and counts), word search drag forwards, backwards and a rejected crooked drag,
+  crossword typing with auto-advance and Backspace, hangman won and lost rounds (balloons pop, basket falls),
+  gapfill drag + tap placement and check, drowning rising water and a correct answer. No console errors. At 375 px
+  no game overflows (memory 3–6, word search 16×16).
+- Bugs found and fixed on the way: CSS custom properties were dropped by `Object.assign(el.style)` (grids collapsed
+  to one column); `.btn` overrode the `hidden` attribute (Next word showed too early); multi-letter input in the
+  crossword (paste/autocomplete) now flows into the next cells; the logo tile looked like a card.
+
+**Not verified**
+- Real phone touch (only the emulated 375 px viewport with mouse-driven pointer events).

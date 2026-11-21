@@ -7,7 +7,28 @@ export default {
   level: 'B1',
   targetLang: 'en',
   supportLang: 'hu',
-  text: 'Our extended family gets together every summer...',
+  // The analysis writes a new text with the list words (SPEC 5); {{n}} marks gap n.
+  cloze: {
+    text: 'Every summer all our {{1}} meet at my grandparents’ farm. My father {{2}} there, and he still '
+      + 'knows every tree. My grandmother {{3}} five children, so the house is always full. I have two '
+      + '{{4}}, and we don’t always {{5}} each other: last year my brother and I started to {{6}} about the '
+      + 'last piece of cake, and Grandma made us {{7}} to each other. Everybody says I {{8}} my grandfather – '
+      + 'we are both tall and quiet. He is very {{9}}: he gave me my first bike. And when we finish the '
+      + '{{10}} in the evening, he tells stories about our {{11}} who came from Ireland.',
+    gaps: [
+      { n: 1, itemId: 'w07', answer: 'relatives' },
+      { n: 2, itemId: 'w05', answer: 'grew up' },
+      { n: 3, itemId: 'w04', answer: 'brought up' },
+      { n: 4, itemId: 'w06', answer: 'siblings' },
+      { n: 5, itemId: 'w03', answer: 'get on with' },
+      { n: 6, itemId: 'w15', answer: 'argue' },
+      { n: 7, itemId: 'w16', answer: 'apologise' },
+      { n: 8, itemId: 'w02', answer: 'take after' },
+      { n: 9, itemId: 'w19', answer: 'generous' },
+      { n: 10, itemId: 'w13', answer: 'chores' },
+      { n: 11, itemId: 'w11', answer: 'ancestors' },
+    ],
+  },
   items: [
     { id: 'w01', term: 'look after', lemma: 'look after', pos: 'phrasal verb', level: 'B1',
       definition: 'to take care of someone', translation: 'gondoskodik valakiről',

@@ -64,14 +64,26 @@ Per item (`term` may be a multi-word expression):
 | `definition` (target language, simple) | monolingual matching, crossword clues | to take care of someone |
 | `translation` (support language) | bilingual games | gondoskodik valakiről |
 | `sourceSentence` | context | *She looked after her little brother.* |
-| `example` = `{ text, answer }` (new sentence with exactly one `___` gap, and the exact form that fills it) | gapfill | `{ text: "Who will ___ the dog while we're away?", answer: "look after" }` |
-| `distractors[3]` (same form as `example.answer`) | gapfill options, later quiz | take after, look for, look into |
+| `example` = `{ text, answer }` (new sentence with exactly one `___` gap, and the exact form that fills it) | later: quiz, sentence gapfill | `{ text: "Who will ___ the dog while we're away?", answer: "look after" }` |
+| `distractors[3]` (same form as `example.answer`) | extra wrong words in the gapfill bank, later quiz | take after, look for, look into |
 | `family` | later: word formation | care, careful, careless |
 | `synonyms`, `antonyms` | later: matching variants, odd one out | take care of |
 | `category` (group inside the list) | later: assigning, odd one out | family / people |
 
-List level: `title`, `topic`, `level`, `targetLang`, `supportLang`, and a **new short AI-written text** using the
-chosen words (later: cloze). New text, not a copy of the source: copyright, and the gaps fall on list words.
+List level: `title`, `topic`, `level`, `targetLang`, `supportLang`, and **`cloze`: a new connected text written by
+the AI** with the list words, the gaps marked (the gapfill game, decided 2026-11-21, as in the old WordNerd
+"complex gapfill"):
+
+```
+cloze: {
+  text: "Every summer all our {{1}} meet at my grandparents' farm. My father {{2}} there…",
+  gaps: [ { n: 1, itemId: "w07", answer: "relatives" }, { n: 2, itemId: "w05", answer: "grew up" } ]
+}
+```
+
+Every `{{n}}` has exactly one gap entry and vice versa; `answer` is the form that fits (it may be inflected).
+About 8–12 gaps, roughly 120–200 words. New text, not a copy of the source: copyright, and the gaps fall on list
+words.
 
 **Languages.** Start: target language English, support language chosen by the teacher. The schema has no language
 in field names. Adding target languages later stays cheap if: the prompt is parameterised; the letter games (word
@@ -84,16 +96,39 @@ All deterministic (list + settings + seed). First version (decided 2026-11-21): 
 
 | Game | Mono/bilingual | Source fields | Teacher settings (from the old skill tree) |
 |---|---|---|---|
-| Memory | both | term ↔ translation / definition | pairs (8 → 12), card flip time |
-| Matching | both | term ↔ translation / definition | pairs (10 →) |
+| Memory | both | term ↔ translation / definition | square board 3×3 / 4×4 / 5×5 / 6×6 (4 / 8 / 12 / 18 pairs; odd boards have a logo tile in the centre), wrong-pair display time |
+| Matching | definition by default (translation possible) | term → definition | pairs (4–10) |
 | Word search | both (clue: translation or definition) | term | grid size, directions (diagonal, backwards), number of words |
 | Crossword (hidden word) | both | term + definition / translation | hidden word length (7 →), number of reveal helps |
-| Hangman | both | term (+ clue) | drawing parts (12 → fewer) |
-| Gapfill | monolingual | example + distractors | with options or free typing |
+| Hangman (balloons) | both | term (+ clue) | balloons = allowed misses (12 → 6) |
+| Gapfill (connected text) | monolingual | `cloze` + distractors | extra wrong words in the bank (0–4) |
 | Drowning (type against rising water) | bilingual | translation → term | water speed |
 
-Later (fields already exist, no new analysis needed): quiz, anagrams, Oxford minute, cloze text, odd one out,
+Later (fields already exist, no new analysis needed): quiz, anagrams, Oxford minute, sentence gapfill, odd one out,
 assigning, word formation.
+
+**How the games play (decided 2026-11-21, after András tried the F1 preview):**
+
+- **Memory** – wooden cards with the logo that flip in 3D; a found pair glows green; the board is always square.
+- **Matching** – definition cards in a column, the words in a bank above; drag a word onto its definition (or tap
+  the word, then the definition). Correct: it snaps in and the card turns green. Wrong: the card shakes, the word
+  flies back, and it counts as a mistake.
+- **Word search** – drag across the letters (mouse or finger); a found word gets a coloured capsule; tapping the
+  first and the last letter still works.
+- **Crossword** – typing a letter moves the cursor to the next cell and on to the next row; Backspace goes back,
+  arrow keys move; a paste or mobile autocomplete fills the following cells. "Reveal a letter" fills the focused
+  cell. A solved row turns green; the hidden word lights up at the end.
+- **Hangman** – a basket of books hangs from as many balloons as the allowed misses; every wrong letter pops one
+  and the basket sinks; the last one gone, it falls; a solved word sends it up and away.
+- **Gapfill** – the connected text with gaps and a word bank (answers + extra wrong words); drag words into gaps,
+  swap or move them back, check everything at the end. Wrong words are marked and the answer shown.
+- **Drowning** – a red British telephone box fills with water, a mortarboard floats on the surface; a correct
+  answer drains some water; Skip sends the word to the end of the queue.
+
+Game UIs: `public/js/games/<game>.js`, each `render(puzzle, ctx) → { el, destroy }` with
+`ctx.onFinish({ score, max, misses })`; drag and drop with tap fallback in `public/js/games/dnd.js`; styles in
+`public/css/games.css`; graphics are inline SVG/CSS (no image files besides the logo). The F4 student pages use
+these modules as they are.
 
 Generators are pure ES modules in `engines/games/`, use only `engines/prng.js` for randomness, and are covered by
 `node:test` tests: same seed → same puzzle; every word placed or explicitly reported as skipped; the crossword is
@@ -112,7 +147,9 @@ session is `gameSeed(sessionSeed, gameIndex)`. Rules settled in F1:
   are left out. Every position is tried in seeded order, so a word is skipped only if it truly cannot fit.
 - Crossword: the hidden word is 0–3 letters longer than the asked length; rows are assigned rarest letter first.
   If no layout exists the game reports it instead of producing a broken puzzle.
-- Gapfill: an item without exactly one gap, or (in options mode) without three distinct distractors, is skipped.
+- Gapfill: the text must have at least 4 gaps and match its gap list one to one, otherwise the game reports it.
+  Extra bank words come from the distractors of the gap words and are never an answer anywhere in the text.
+- Memory: a list too short for the asked board gets the largest square board it can fill.
 - Drowning: water fills in 60 / 40 / 25 seconds (slow / normal / fast); a correct answer drains 20 / 15 / 12 %.
 
 Local preview of all seven games with the sample list: `npm run serve`, then `/dev/preview.html`.

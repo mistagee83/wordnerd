@@ -104,6 +104,16 @@ export function findWord(puzzle, r1, c1, r2, c2) {
   return null;
 }
 
+// The cells of a straight line (row, column or 45° diagonal) from (r1,c1) to (r2,c2), or null if the two
+// cells are not on one line. The UI uses it to highlight a drag only when it could be a word.
+export function lineCells(r1, c1, r2, c2) {
+  const dr = Math.sign(r2 - r1);
+  const dc = Math.sign(c2 - c1);
+  const len = Math.max(Math.abs(r2 - r1), Math.abs(c2 - c1)) + 1;
+  if (r1 !== r2 && c1 !== c2 && Math.abs(r2 - r1) !== Math.abs(c2 - c1)) return null;
+  return Array.from({ length: len }, (_, i) => [r1 + dr * i, c1 + dc * i]);
+}
+
 export function cellsOf(p) {
   return Array.from({ length: p.length }, (_, i) => [p.row + p.dr * i, p.col + p.dc * i]);
 }

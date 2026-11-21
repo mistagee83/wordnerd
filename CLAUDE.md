@@ -79,6 +79,8 @@ games from it deterministically, shared with students through a code. One app un
 - The logo in `public/img/brand/` is final (vector sources in `design/brand-source/`). Never redraw or recolour it.
 - Colours: raw tokens only in `public/css/tokens.css`, role variables (`--c-*`) only in `public/css/base.css`.
 - Dashboard layout follows the old WordNerd (SPEC 10), translated to a phone-first layout.
+- Game UIs live in `public/js/games/` (one module per game, `render(puzzle, ctx) → { el, destroy }`) with styles in
+  `public/css/games.css`; graphics are inline SVG/CSS. The preview and the F4 student pages share them.
 
 ## Commands
 
