@@ -184,3 +184,37 @@ credits; prints the list and token use, writes the JSON to `tmp-live/`.
 
 **Still open before production**: secret `WN_GEMINI_API_KEY` in Secret Manager, the `wordnerd/analyze` price in the
 Hub's `settings/credits`, the first deploy (all with András's approval).
+
+## F3 – Teacher app (2026-11-21)
+
+**Decisions (András)**: hosting on Cloudflare Pages from `main` (he creates the project and DNS). Correction of the
+spec: the teacher's word lists (the library) are always visible; only the History of played sessions needs the
+Hub pass (SPEC 7 and the Hub concept fixed). András renamed the local key to `WN_GEMINI_API_KEY` and set the price
+of `wordnerd/analyze` in the Hub admin. Secret Manager still has no `WN_GEMINI_API_KEY` (checked: 404).
+
+**Built**
+- Server: `engines/lists/edit.js` (checked edits, gap repair after deleting a word, summaries) and
+  `functions/lists.js`: `wnListLists`, `wnGetList`, `wnSaveList` (transaction), `wnDeleteList`; emulator-only
+  `wnDevSeed`. No Hub rules change: only functions touch `wnLists`; the page reads the Hub's `users/{uid}` and
+  `settings/credits`, which the Hub rules already allow.
+- Front end: `teacher.html`, `js/teacher.js`, `js/firebase.js` (emulators with WordNerd's ports, `?live`),
+  `css/app.css` (the old dashboard: wooden tabs, central panel, logo plank, name bar; bottom tab bar on phones),
+  `js/games/settings.js` (settings form shared with the dev preview). Landing page links to the teacher page.
+- Hub: `shared/sso.js` lists the WordNerd origin (Hub commit `de98f10` on `dev`, not pushed, not deployed);
+  the copy in `public/js/hub/sso.js` is synced.
+
+**Verified**
+- `npm test` 63 pass (6 new for list edits); `npm run test:emulator` 11 checks (2 new: library list/open/edit/
+  refusals, delete; another teacher and a student see nothing).
+- Browser against the emulators (mock model): test-teacher sign-in with 50 credits; New list with a pasted text →
+  waiting screen → editor (credits 50 → 48); edit a translation, delete a word, add a word, save, reload: all kept;
+  Hangman preview from the edited list; My lists card; "unsuitable" material shows the model's reason and keeps the
+  credits; a too-short text is refused before calling; delete list → empty library. Desktop 1280 px shows the old
+  layout; at 375 px no view overflows (definition field and name bar fixed on the way). The success note was lost
+  on navigation – fixed. Console: only the expected 400 of the test teacher's first sign-in attempt.
+
+**Not verified / open**
+- Nothing is live: Cloudflare Pages project, DNS, Auth authorized domain (András); Secret Manager secret, functions
+  deploy, Hub functions deploy for one-click sign-in (with approval).
+- Google sign-in and the Hub's one-click link were not tried (they need the real project and domain).
+- A real phone.

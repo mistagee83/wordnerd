@@ -200,6 +200,13 @@ Codebase `wordnerd`, Node 22, 2nd gen, europe-west1, secrets in Secret Manager.
 
 - `wnAnalyze` (callable, teacher; built in F2) – see "Analysis" below.
 - `joinSession` (callable, anonymous) – code check, session open, nickname unique in the session.
+- `wnListLists`, `wnGetList`, `wnSaveList`, `wnDeleteList` (callables, teacher; F3): the library. Only functions touch
+  `wnLists` (no client rules needed; the Hubbaloo pattern). `wnSaveList` applies `engines/lists/edit.js`: title; per
+  word term, translation, definition, category; delete; reorder; add a word by hand (term, translation and
+  definition required; it has no example sentence and no gap, so the gapfill text leaves it out); a deleted word's
+  gapfill gap becomes plain text and the other gaps are renumbered; 4–40 words. Someone else's list answers
+  exactly like a missing one (`not-found` / `list`).
+- `wnDevSeed` exists only in the emulator: 50 credits and a price for the caller, for local trials.
 - Later: `enrichItem`, cleanup of expired sessions and old data.
 
 ### Analysis (F2)
@@ -258,6 +265,18 @@ structure are shared with the Hub).
   WordNerd; third-party images are not.
 - UI text in English, sentence case.
 
+### Teacher page (F3)
+
+`public/teacher.html` + `public/js/teacher.js`. Sign-in as in the other Hub apps (Google, e-mail and password,
+forgotten password, "Create your account" on the Hub, one click from the Hub with `#sso=`). The dashboard follows the
+old layout: logo plank on top, wooden tabs **My lists**, **New list** (left) and **Sessions**, **Results** (right)
+around the central panel, the name bar below with the live credit balance (the Hub's `users/{uid}` read directly,
+the price from `settings/credits`) and "Get credits" (Hub `/account`). Under 900 px the four tabs become a bottom
+bar. Views: My lists (cards), New list (paste or file, level, translation language – remembered –, number of words,
+title, focus, the price and the balance; about 30 s waiting screen), the list editor (words left, games right,
+sticky save bar, unsaved-changes guard, delete list), and a preview overlay for every game with its settings.
+Sessions and Results are placeholders until F4/F5. Locally the page uses the emulators; `?live` uses the project.
+
 ## 11. Hosting
 
 - Address: `https://wordnerd.mrandrewshub.com` (decided 2026-11-21).
@@ -265,8 +284,9 @@ structure are shared with the Hub).
   WordNerd (the Hub is not advertised before December 2026). The site is `noindex` until launch.
 - Static front end on Cloudflare Pages from `main` (build `node scripts/build-web.mjs`, output `dist`), like the Hub
   and Hubbaloo (decided 2026-11-21). András creates the Pages project and the DNS record.
-- The Hub must add the origin to `shared/sso.js` `APP_ORIGINS` / `APP_NAMES` and to Firebase Auth authorized
-  domains (Hub repo change, F3).
+- The Hub's `shared/sso.js` lists `https://wordnerd.mrandrewshub.com` in `APP_ORIGINS` / `APP_NAMES` (Hub commit
+  2026-11-21, live after the Hub's functions are deployed). Firebase Auth authorized domains: add
+  `wordnerd.mrandrewshub.com` (András, console).
 
 ## 12. Phases
 
