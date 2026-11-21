@@ -1,6 +1,7 @@
 // Hangman renderer – the balloon version (decided 2026-11-21): a basket of books hangs from as many
-// balloons as the teacher allows misses. Every wrong letter pops a balloon and the basket sinks; with the
-// last balloon gone it falls. A solved word sends the basket up and away.
+// balloons as the game has lives. The lives (balloons) are shared by all the words of the game: every wrong
+// letter pops one and the basket sinks; with the last balloon gone it falls and the game is over. When the
+// last word is solved the basket flies up and away.
 import { display, guess, newRound, status } from '/engines/games/hangman.js';
 import { addMiss, flash, h, s, statusLine } from './ui.js';
 
@@ -48,25 +49,36 @@ function scene(maxMisses) {
 
 export function render(p, ctx = {}) {
   const misses = {};
+  const total = p.rounds.length;
   let index = 0;
   let won = 0;
+  let missesSoFar = 0; // shared by all rounds
   let timer = null;
-  const box = h('div', { class: 'g-hangman' });
+  let cleanupKey = () => {};
+  const { svg, bunch, balloons } = scene(p.maxMisses);
+  const info = statusLine('');
+  const progress = h('div', { class: 'hm-progress', 'aria-label': 'Words' }, p.rounds.map(() => h('span', { class: 'hm-dot' })));
+  const side = h('div', { class: 'hm-side' });
+  const box = h('div', { class: 'g-hangman' }, info, h('div', { class: 'hm-layout' }, h('div', {}, svg, progress), side));
+  const livesLeft = () => p.maxMisses - missesSoFar;
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+  function endGame(allSolved) {
+    cleanupKey();
+    info.textContent = allSolved
+      ? `All ${total} words solved with ${plural(livesLeft(), 'balloon')} left – up and away.`
+      : `The basket fell. ${won} of ${total} words solved.`;
+    bunch.classList.add(allSolved ? 'is-flying' : 'is-falling');
+    ctx.onFinish?.({ score: won, max: total, misses, livesLeft: livesLeft() });
+  }
 
   function drawRound() {
-    if (index >= p.rounds.length) {
-      box.replaceChildren(statusLine(`Finished: ${won} / ${p.rounds.length} words.`));
-      ctx.onFinish?.({ score: won, max: p.rounds.length, misses });
-      return;
-    }
     const round = p.rounds[index];
-    let st = newRound();
-    const { svg, bunch, balloons } = scene(p.maxMisses);
-    const info = statusLine(`Word ${index + 1} of ${p.rounds.length}`);
+    let st = newRound(missesSoFar);
     const word = h('div', { class: 'hm-word', 'aria-live': 'polite' });
-    const next = h('button', { type: 'button', class: 'btn', hidden: true, onclick: () => { index += 1; drawRound(); } },
-      index + 1 < p.rounds.length ? 'Next word' : 'See result');
+    const next = h('button', { type: 'button', class: 'btn', hidden: true, onclick: () => { index += 1; drawRound(); } }, 'Next word');
     const keys = round.keyboard.map((k) => h('button', { type: 'button', class: 'hm-key', onclick: (e) => press(k, e.currentTarget) }, k));
+    cleanupKey();
     const onKey = (e) => {
       const k = e.key.length === 1 ? e.key.toLocaleUpperCase(ctx.lang ?? 'en') : null;
       const btn = keys.find((b) => b.textContent === k && !b.disabled);
@@ -79,12 +91,12 @@ export function render(p, ctx = {}) {
     function press(k, btn) {
       const before = st.misses;
       st = guess(round, st, k, p.maxMisses);
+      missesSoFar = st.misses;
       btn.disabled = true;
       const miss = st.misses > before;
       btn.classList.add(miss ? 'is-miss' : 'is-hit');
       if (miss) {
-        const b = balloons[balloons.length - st.misses];
-        b.classList.add('is-popped');
+        balloons[balloons.length - st.misses].classList.add('is-popped');
         addMiss(misses, round.itemId);
         // the basket sinks a step for every lost balloon
         bunch.style.transform = `translateY(${(st.misses / p.maxMisses) * 70}px)`;
@@ -96,27 +108,30 @@ export function render(p, ctx = {}) {
     function update() {
       word.replaceChildren(...display(round, st).map((ch, i) => h('span', { class: `hm-slot${round.slots[i].hidden ? '' : ' is-fixed'}` }, ch === '_' ? '' : ch)));
       const stt = status(round, st, p.maxMisses);
-      if (stt === 'playing') { info.textContent = `Word ${index + 1} of ${p.rounds.length} · ${p.maxMisses - st.misses} balloon${p.maxMisses - st.misses === 1 ? '' : 's'} left`; return; }
+      if (stt === 'playing') {
+        info.textContent = `Word ${index + 1} of ${total} · ${plural(livesLeft(), 'balloon')} left for all the words`;
+        return;
+      }
       keys.forEach((b) => { b.disabled = true; });
-      cleanupKey();
-      next.hidden = false;
+      const dot = progress.children[index];
       if (stt === 'won') {
         won += 1;
-        info.textContent = 'Correct – up and away.';
-        bunch.classList.add('is-flying');
+        dot.classList.add('is-won');
+        word.classList.add('is-solved');
+        if (index + 1 >= total) { endGame(true); return; }
+        info.textContent = `Correct. ${plural(livesLeft(), 'balloon')} left for the next ${plural(total - index - 1, 'word')}.`;
+        next.hidden = false;
+        timer = setTimeout(() => next.focus(), 300);
       } else {
-        info.textContent = 'The basket fell. The word was:';
+        dot.classList.add('is-lost');
         word.replaceChildren(...round.slots.map((sl) => h('span', { class: 'hm-slot is-reveal' }, sl.letter ?? sl.char)));
-        bunch.classList.add('is-falling');
+        endGame(false);
       }
-      timer = setTimeout(() => next.focus(), 400);
     }
     update();
-    box.replaceChildren(info, h('div', { class: 'hm-layout' }, svg, h('div', { class: 'hm-side' },
-      round.clue ? h('p', { class: 'hm-clue' }, round.clue) : null, word, h('div', { class: 'hm-keys' }, keys), h('p', {}, next))));
+    side.replaceChildren(round.clue ? h('p', { class: 'hm-clue' }, round.clue) : null, word, h('div', { class: 'hm-keys' }, keys), h('p', {}, next));
   }
 
-  let cleanupKey = () => {};
   drawRound();
   return { el: box, destroy: () => { clearTimeout(timer); cleanupKey(); } };
 }

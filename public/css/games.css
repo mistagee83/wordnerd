@@ -2,6 +2,11 @@
    Uses the role variables of base.css; the old WordNerd look: wood, amber, dark board. */
 
 .g-status { margin: 0 0 14px; color: var(--c-accent); font-weight: 600; min-height: 1.5em; }
+/* text fields inside games (secret word guess, drowning answer) */
+.cw-guess, .dr-input {
+  font: inherit; padding: 8px 12px; border-radius: var(--wn-radius-sm);
+  border: 1px solid var(--c-wood-line); background: var(--c-field); color: var(--c-field-text);
+}
 .btn-small { padding: 6px 14px; font-size: .9rem; }
 .btn-ghost { background: transparent; }
 .btn:disabled { opacity: .45; cursor: default; }
@@ -125,6 +130,20 @@
 .cw-row.is-solved .cw-cell { background: #dff5c6; border-color: var(--c-ok); }
 .cw-row.is-solved .cw-cell.is-hidden-col { background: #b8e986; }
 .g-crossword.is-complete .cw-cell.is-hidden-col { background: var(--wn-amber-500); animation: g-pop .5s ease; }
+.cw-row.is-shown .cw-cell { color: #9a8a74; background: #efe6d6; }
+.cw-secret {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 18px; padding: 12px 14px;
+  border-radius: var(--wn-radius-md); background: rgb(0 0 0 / .2); border: 1px solid var(--wn-wood-line);
+}
+.cw-secret-label { font-family: var(--wn-font-display); color: var(--c-accent); }
+.cw-secret-tiles { display: flex; gap: 4px; }
+.cw-secret-tile {
+  width: 30px; height: 34px; display: grid; place-items: center; border-radius: 4px;
+  background: #f7d79b; color: var(--wn-board-900); font: 600 1.05rem var(--wn-font-body);
+}
+.g-crossword.is-complete .cw-secret-tile { background: var(--wn-amber-500); }
+.cw-guess-form { display: flex; gap: 6px; flex: 1 1 220px; }
+.cw-guess { flex: 1 1 120px; min-width: 0; text-transform: uppercase; letter-spacing: .1em; }
 .cw-clues { margin: 0; padding-left: 22px; max-width: 440px; }
 .cw-clues li { margin-bottom: 4px; }
 
@@ -142,6 +161,11 @@
 @keyframes hm-fall { to { transform: translateY(88px) rotate(14deg); } }
 .hm-bunch.is-flying { animation: hm-fly 1.6s ease-in forwards; }
 @keyframes hm-fly { to { transform: translateY(-420px); } }
+.hm-progress { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
+.hm-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--wn-wood-line); background: transparent; }
+.hm-dot.is-won { background: var(--c-ok); border-color: var(--c-ok); }
+.hm-dot.is-lost { background: var(--c-error); border-color: var(--c-error); }
+.hm-word.is-solved .hm-slot { color: var(--c-ok); border-bottom-color: var(--c-ok); }
 .hm-clue { margin: 0 0 8px; color: var(--c-text-muted); }
 .hm-clue::before { content: 'Clue: '; color: var(--c-accent); }
 .hm-word { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 18px; }

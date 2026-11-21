@@ -9,6 +9,8 @@ export const meta = { id: 'wordsearch', title: 'Word search', bilingual: 'both' 
 export const defaults = { words: 10, size: 0, directions: 'medium', clueMode: 'term' };
 export const limits = { words: { min: 4, max: 20 }, size: { min: 8, max: 16 } };
 
+const LAYOUT_ATTEMPTS = 12;
+
 // [dRow, dCol]
 const DIRS = {
   easy: [[0, 1], [1, 0]], // right, down
@@ -49,12 +51,20 @@ function positions(n, len, dirs) {
 const fits = (grid, letters, { row, col, dr, dc }) =>
   letters.every((l, i) => { const cell = grid[row + dr * i][col + dc * i]; return cell === null || cell === l; }); // cross only on the same letter
 
-// Tries every position in a seeded random order: a word is skipped only if it really cannot fit.
-function place(grid, letters, dirs, rng) {
-  const pos = rng.shuffle(positions(grid.length, letters.length, dirs)).find((p) => fits(grid, letters, p));
-  if (!pos) return null;
-  letters.forEach((l, i) => { grid[pos.row + pos.dr * i][pos.col + pos.dc * i] = l; });
-  return pos;
+// Directions are balanced: the least used direction is tried first (ties in seeded random order), so a
+// "medium" puzzle really mixes across, down and diagonal words (without this, long words went mostly
+// across, because a straight line has many more start cells than a diagonal). Within a direction every
+// position is tried in seeded order: a word is skipped only if it really cannot fit anywhere.
+function place(grid, letters, dirs, rng, usage) {
+  const order = rng.shuffle(dirs).sort((a, b) => usage.get(String(a)) - usage.get(String(b)));
+  for (const dir of order) {
+    const pos = rng.shuffle(positions(grid.length, letters.length, [dir])).find((p) => fits(grid, letters, p));
+    if (!pos) continue;
+    letters.forEach((l, i) => { grid[pos.row + pos.dr * i][pos.col + pos.dc * i] = l; });
+    usage.set(String(dir), usage.get(String(dir)) + 1);
+    return pos;
+  }
+  return null;
 }
 
 export function generate(list, settings, seed) {
@@ -71,19 +81,27 @@ export function generate(list, settings, seed) {
 
   const chosen = pickItems(items, s.words, rng).map((it) => ({ item: it, letters: gridLetters(it.term, lang) }));
   const size = s.size || autoSize(chosen.map((c) => c.letters));
-  const grid = Array.from({ length: size }, () => Array(size).fill(null));
   const dirs = DIRS[s.directions];
 
   // longest first: they are the hardest to fit
   const order = [...chosen].sort((a, b) => b.letters.length - a.letters.length || (a.item.id < b.item.id ? -1 : 1));
-  const placements = [];
-  const skipped = [];
-  for (const { item, letters } of order) {
-    const placed = place(grid, letters, dirs, rng);
-    if (placed) placements.push({ itemId: item.id, length: letters.length, ...placed });
-    else skipped.push(item.id);
+  // A greedy layout can block a later word (tight grids); try a few layouts and keep the first complete
+  // one, or the one that placed the most words. Still deterministic: the attempts use the same seeded rng.
+  let best = null;
+  for (let attempt = 0; attempt < LAYOUT_ATTEMPTS && !(best && best.skipped.length === 0); attempt++) {
+    const grid = Array.from({ length: size }, () => Array(size).fill(null));
+    const placements = [];
+    const skipped = [];
+    const usage = new Map(dirs.map((d) => [String(d), 0]));
+    for (const { item, letters } of order) {
+      const placed = place(grid, letters, dirs, rng, usage);
+      if (placed) placements.push({ itemId: item.id, length: letters.length, ...placed });
+      else skipped.push(item.id);
+    }
+    if (!best || skipped.length < best.skipped.length) best = { grid, placements, skipped };
   }
-  if (placements.length < limits.words.min) return fail('the words do not fit the grid');
+  const { grid, placements, skipped } = best;
+  if (placements.length < Math.min(limits.words.min, chosen.length)) return fail('the words do not fit the grid');
 
   const filler = fillerAlphabet(lang, chosen.map((c) => c.letters));
   const rows = grid.map((r) => r.map((cell) => cell ?? rng.pick(filler)));

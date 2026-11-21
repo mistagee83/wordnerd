@@ -17,7 +17,7 @@ const CHOICES = {
   directions: ['easy', 'medium', 'hard'],
   speed: ['slow', 'normal', 'fast'],
 };
-const LABELS = { grid: 'board (n × n)', size: 'grid size (0 = auto)', extras: 'extra words in bank', flipMs: 'wrong pair shown (ms)', parts: 'balloons', hiddenLength: 'hidden word length' };
+const LABELS = { grid: 'board (n × n)', size: 'grid size (0 = auto)', extras: 'extra words in bank', flipMs: 'wrong pair shown (ms)', lives: 'lives (balloons, shared)', guesses: 'secret word guesses', hiddenLength: 'hidden word length' };
 
 const $ = (sel) => document.querySelector(sel);
 const params = new URLSearchParams(location.search);

@@ -1,21 +1,25 @@
-// Crossword renderer: type a letter and the cursor jumps to the next cell (then to the next row).
-// Backspace on an empty cell goes back; arrow keys move. A solved row turns green; when every row is
-// solved the hidden word lights up. "Reveal" fills the focused cell (limited by the teacher setting).
-import { rowCorrect } from '/engines/games/crossword.js';
+// Crossword renderer. The goal is the secret word in the yellow column: solve rows to get its letters,
+// and guess it whenever you see it (limited guesses). Solving every row also finds it.
+// Typing moves the cursor to the next cell and on to the next row; Backspace on an empty cell goes back;
+// arrow keys move; a paste or mobile autocomplete fills the following cells. "Reveal" fills one cell.
+import { rowCorrect, secretCorrect } from '/engines/games/crossword.js';
 import { gridLetters } from '/engines/lang.js';
 import { addMiss, flash, h, statusLine } from './ui.js';
 
 export function render(p, ctx = {}) {
   const lang = ctx.lang ?? 'en';
-  const line = statusLine(`Fill in the rows. The yellow column hides a ${p.hidden.letters.length}-letter word.`);
+  const L = p.hidden.letters.length;
+  const line = statusLine(`Find the secret ${L}-letter word in the yellow column. Solve rows to get its letters, guess it when you see it.`);
   const misses = {};
   let reveals = p.settings.reveals;
+  let guesses = p.settings.guesses;
   let solvedCount = 0;
+  let finished = false;
   let lastFocus = null;
   const all = []; // every input in reading order: { input, row, i }
 
   const revealBtn = h('button', { type: 'button', class: 'btn btn-small', onclick: reveal }, '');
-  const updateReveal = () => { revealBtn.textContent = `Reveal a letter (${reveals})`; revealBtn.disabled = reveals <= 0; };
+  const updateReveal = () => { revealBtn.textContent = `Reveal a letter (${reveals})`; revealBtn.disabled = finished || reveals <= 0; };
   updateReveal();
 
   const rowEls = p.rows.map((row) => {
@@ -36,40 +40,77 @@ export function render(p, ctx = {}) {
     return el;
   });
 
+  // the secret word box: one tile per letter, filled from the solved rows; plus the guess field
+  const tiles = p.hidden.letters.map(() => h('span', { class: 'cw-secret-tile' }));
+  const guessInput = h('input', { type: 'text', class: 'cw-guess', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', placeholder: `${L} letters`, 'aria-label': 'Your guess at the secret word' });
+  const guessBtn = h('button', { class: 'btn btn-small' }, '');
+  const updateGuess = () => { guessBtn.textContent = `Guess (${guesses} left)`; guessBtn.disabled = guessInput.disabled = finished || guesses <= 0; };
+  updateGuess();
+  const guessForm = h('form', { class: 'cw-guess-form', onsubmit: (e) => {
+    e.preventDefault();
+    if (finished || guesses <= 0 || !guessInput.value.trim()) return;
+    if (secretCorrect(p, guessInput.value, lang)) { finish(true); return; }
+    guesses -= 1;
+    flash(guessForm, 'is-wrong');
+    guessInput.select();
+    updateGuess();
+    if (guesses <= 0) line.textContent = 'No guesses left: solve the rows to uncover the secret word.';
+  } }, guessInput, guessBtn);
+  const secretBox = h('div', { class: 'cw-secret' }, h('span', { class: 'cw-secret-label' }, 'Secret word'), h('span', { class: 'cw-secret-tiles' }, tiles), guessForm);
+
   const indexOf = (input) => all.findIndex((x) => x.input === input);
   const focusAt = (k) => { const x = all[Math.max(0, Math.min(all.length - 1, k))]; x.input.focus(); x.input.select(); };
 
+  function finish(guessedEarly) {
+    finished = true;
+    el.classList.add('is-complete');
+    tiles.forEach((t, i) => { t.textContent = p.hidden.letters[i]; });
+    // unsolved rows show their answers greyed, so the words are still learnt
+    for (const r of rowEls) {
+      if (r._solved) continue;
+      r.classList.add('is-shown');
+      r._inputs.forEach((inp, i) => { inp.value = r._row.letters[i]; });
+    }
+    all.forEach((x) => { x.input.readOnly = true; });
+    updateReveal();
+    updateGuess();
+    line.textContent = guessedEarly
+      ? `You found the secret word ${p.hidden.letters.join('')} with ${solvedCount} of ${p.rows.length} rows solved.`
+      : `All rows solved. The secret word: ${p.hidden.letters.join('')}`;
+    ctx.onFinish?.({
+      score: solvedCount, max: p.rows.length, misses, secretFound: true, guessedEarly,
+      guessesUsed: p.settings.guesses - guesses, revealsUsed: p.settings.reveals - reveals,
+    });
+  }
+
   function checkRow(rowEl) {
+    if (finished) return;
     const typed = rowEl._inputs.map((inp) => inp.value);
     const ok = rowCorrect(rowEl._row, typed);
-    const full = typed.every(Boolean);
-    if (full && !ok && !rowEl._solved) { addMiss(misses, rowEl._row.itemId); flash(rowEl, 'is-wrong'); }
+    if (typed.every(Boolean) && !ok && !rowEl._solved) { addMiss(misses, rowEl._row.itemId); flash(rowEl, 'is-wrong'); }
     if (ok !== rowEl._solved) {
       rowEl._solved = ok;
       rowEl.classList.toggle('is-solved', ok);
       if (ok) flash(rowEl, 'is-pop');
       solvedCount += ok ? 1 : -1;
+      const tile = tiles[rowEl._row.number - 1];
+      tile.textContent = ok ? p.hidden.letters[rowEl._row.number - 1] : '';
+      if (ok) flash(tile, 'is-pop');
     }
-    if (solvedCount === p.rows.length) {
-      el.classList.add('is-complete');
-      line.textContent = `Solved. The hidden word: ${p.hidden.letters.join('')}`;
-      all.forEach((x) => { x.input.readOnly = true; });
-      revealBtn.disabled = true;
-      ctx.onFinish?.({ score: p.rows.length - Object.keys(misses).length, max: p.rows.length, misses, revealsUsed: p.settings.reveals - reveals });
-    }
+    if (solvedCount === p.rows.length) finish(false);
   }
 
   function reveal() {
     const k = lastFocus ? indexOf(lastFocus) : all.findIndex((x) => !x.input.value);
     const target = all[k] && !all[k].input.value ? all[k] : all.find((x) => !x.input.value);
-    if (!target || reveals <= 0) return;
+    if (!target || reveals <= 0 || finished) return;
     reveals -= 1;
     updateReveal();
     target.input.value = target.row.letters[target.i];
     target.input.classList.add('is-revealed');
     checkRow(rowEls[target.row.number - 1]);
     const next = all.findIndex((x, j) => j > indexOf(target.input) && !x.input.value);
-    if (next >= 0) focusAt(next);
+    if (next >= 0 && !finished) focusAt(next);
   }
 
   const gridEl = h('div', { class: 'cw-grid', style: { '--w': p.width } }, rowEls);
@@ -90,16 +131,22 @@ export function render(p, ctx = {}) {
       touched.add(x.row.number - 1);
     });
     touched.forEach((r) => checkRow(rowEls[r]));
+    if (finished) return;
     const next = k + letters.length;
     if (next < all.length) focusAt(next);
     else input.blur();
   });
   gridEl.addEventListener('keydown', (e) => {
     const k = indexOf(e.target);
-    if (k < 0) return;
+    if (k < 0 || finished) return;
     const { row, i } = all[k];
-    if (e.key === 'Backspace' && !e.target.value) { e.preventDefault(); focusAt(k - 1); all[Math.max(0, k - 1)].input.value = ''; checkRow(rowEls[all[Math.max(0, k - 1)].row.number - 1]); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); focusAt(k + 1); }
+    if (e.key === 'Backspace' && !e.target.value) {
+      e.preventDefault();
+      const prev = Math.max(0, k - 1);
+      focusAt(prev);
+      all[prev].input.value = '';
+      checkRow(rowEls[all[prev].row.number - 1]);
+    } else if (e.key === 'ArrowRight') { e.preventDefault(); focusAt(k + 1); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); focusAt(k - 1); }
     else if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
       e.preventDefault();
@@ -113,6 +160,7 @@ export function render(p, ctx = {}) {
   });
 
   const clues = h('ol', { class: 'cw-clues' }, p.rows.map((r) => h('li', {}, r.clue)));
-  const el = h('div', { class: 'g-crossword' }, line, h('div', { class: 'cw-layout' }, h('div', {}, gridEl, h('p', {}, revealBtn)), clues));
+  const el = h('div', { class: 'g-crossword' }, line, secretBox,
+    h('div', { class: 'cw-layout' }, h('div', {}, gridEl, h('p', {}, revealBtn)), clues));
   return { el, destroy: () => {} };
 }

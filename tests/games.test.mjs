@@ -5,7 +5,7 @@ import { GAMES, GAME_IDS, gameSeed, generateGame } from '../engines/games/index.
 import { isPair } from '../engines/games/memory.js';
 import { isMatch } from '../engines/games/matching.js';
 import { cellsOf, findWord, lineCells } from '../engines/games/wordsearch.js';
-import { rowCorrect } from '../engines/games/crossword.js';
+import { rowCorrect, secretCorrect } from '../engines/games/crossword.js';
 import { display, guess, newRound, status } from '../engines/games/hangman.js';
 import { checkAll } from '../engines/games/gapfill.js';
 import { isCorrect as drownCorrect, waterLevel } from '../engines/games/drowning.js';
@@ -154,9 +154,30 @@ test('crossword: impossible request fails cleanly', () => {
   assert.equal(p.ok, false);
 });
 
+test('hangman: defaults are 4 words sharing 12 lives', () => {
+  const p = generateGame('hangman', list, {}, 'h');
+  assert.equal(p.rounds.length, 4);
+  assert.equal(p.maxMisses, 12);
+});
+
+test('hangman: the misses carry over to the next word (shared lives)', () => {
+  const p = generateGame('hangman', list, { words: 4, lives: 5 }, 'h');
+  const [r1, r2] = p.rounds;
+  const wrong1 = r1.keyboard.filter((k) => !r1.slots.some((s) => s.letter === k)).slice(0, 3);
+  let st = newRound();
+  for (const k of wrong1) st = guess(r1, st, k, p.maxMisses);
+  for (const k of new Set(r1.slots.filter((s) => s.hidden).map((s) => s.letter))) st = guess(r1, st, k, p.maxMisses);
+  assert.equal(status(r1, st, p.maxMisses), 'won');
+  let st2 = newRound(st.misses);
+  assert.equal(st2.misses, 3);
+  const wrong2 = r2.keyboard.filter((k) => !r2.slots.some((s) => s.letter === k)).slice(0, 2);
+  for (const k of wrong2) st2 = guess(r2, st2, k, p.maxMisses);
+  assert.equal(status(r2, st2, p.maxMisses), 'lost'); // 3 + 2 = 5 lives gone
+});
+
 test('hangman: guessing all letters wins, too many misses loses', () => {
-  const p = generateGame('hangman', list, { words: 20, parts: 6 }, 'h');
-  const round = p.rounds.find((r) => r.itemId === 'w08'); // brother-in-law
+  const p = generateGame('hangman', list, { words: 8, lives: 6 }, 'h');
+  const round = generateGame('hangman', { ...list, items: list.items.filter((it) => it.id === 'w08') }, { lives: 6 }, 'h').rounds[0]; // brother-in-law
   let st = newRound();
   for (const l of 'BROTHEINLAW') st = guess(round, st, l, p.maxMisses);
   assert.equal(status(round, st, p.maxMisses), 'won');
@@ -250,4 +271,28 @@ test('word search: lineCells accepts rows, columns and 45° diagonals only', () 
     const [er, ec] = cellsOf(pl).at(-1);
     assert.deepEqual(lineCells(pl.row, pl.col, er, ec), cellsOf(pl));
   }
+});
+
+test('crossword: guessing the secret word ignores case and spaces, needs every letter', () => {
+  const p = generateGame('crossword', list, {}, 'demo:0');
+  const word = p.hidden.letters.join('');
+  assert.ok(secretCorrect(p, word.toLowerCase()));
+  assert.ok(secretCorrect(p, ` ${word.slice(0, 3)} ${word.slice(3)} `));
+  assert.ok(!secretCorrect(p, word.slice(0, -1)));
+  assert.ok(!secretCorrect(p, word + 'S'));
+  assert.equal(p.settings.guesses, 3);
+});
+
+test('word search: directions are balanced (every direction 20–30% on "medium" over 300 puzzles)', () => {
+  const count = {};
+  let n = 0;
+  for (const seed of SEEDS) {
+    for (const pl of generateGame('wordsearch', list, {}, seed).placements) {
+      const k = `${pl.dr},${pl.dc}`;
+      count[k] = (count[k] ?? 0) + 1;
+      n += 1;
+    }
+  }
+  assert.equal(Object.keys(count).length, 4);
+  for (const v of Object.values(count)) assert.ok(v / n > 0.2 && v / n < 0.3, JSON.stringify(count));
 });

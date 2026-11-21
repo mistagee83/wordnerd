@@ -99,8 +99,8 @@ All deterministic (list + settings + seed). First version (decided 2026-11-21): 
 | Memory | both | term ↔ translation / definition | square board 3×3 / 4×4 / 5×5 / 6×6 (4 / 8 / 12 / 18 pairs; odd boards have a logo tile in the centre), wrong-pair display time |
 | Matching | definition by default (translation possible) | term → definition | pairs (4–10) |
 | Word search | both (clue: translation or definition) | term | grid size, directions (diagonal, backwards), number of words |
-| Crossword (hidden word) | both | term + definition / translation | hidden word length (7 →), number of reveal helps |
-| Hangman (balloons) | both | term (+ clue) | balloons = allowed misses (12 → 6) |
+| Crossword (hidden word) | both | term + definition / translation | hidden word length (7 →), number of reveal helps, guesses at the secret word (default 3) |
+| Hangman (balloons) | both | term (+ clue) | number of words (default 4) and lives shared by them (default 12, 4–12) |
 | Gapfill (connected text) | monolingual | `cloze` + distractors | extra wrong words in the bank (0–4) |
 | Drowning (type against rising water) | bilingual | translation → term | water speed |
 
@@ -114,12 +114,17 @@ assigning, word formation.
   the word, then the definition). Correct: it snaps in and the card turns green. Wrong: the card shakes, the word
   flies back, and it counts as a mistake.
 - **Word search** – drag across the letters (mouse or finger); a found word gets a coloured capsule; tapping the
-  first and the last letter still works.
-- **Crossword** – typing a letter moves the cursor to the next cell and on to the next row; Backspace goes back,
-  arrow keys move; a paste or mobile autocomplete fills the following cells. "Reveal a letter" fills the focused
-  cell. A solved row turns green; the hidden word lights up at the end.
-- **Hangman** – a basket of books hangs from as many balloons as the allowed misses; every wrong letter pops one
-  and the basket sinks; the last one gone, it falls; a solved word sends it up and away.
+  first and the last letter still works. Directions are balanced: on "medium" about a quarter of the words go
+  across, down, and along each diagonal.
+- **Crossword** – the goal is the secret word in the yellow column. Each solved row turns green and puts its letter
+  into the secret-word tiles; the student can guess the secret word at any time (3 guesses by default). A right
+  guess, or solving every row, ends the game; unsolved rows then show their answers greyed, so the words are still
+  seen. Typing moves the cursor to the next cell and on to the next row; Backspace goes back, arrow keys move; a
+  paste or mobile autocomplete fills the following cells. "Reveal a letter" fills the focused cell. Result:
+  rows solved, secret found, early or not, guesses and reveals used.
+- **Hangman** – a game is several words (default 4) with one shared set of lives (default 12 balloons). A basket of
+  books hangs from the balloons; every wrong letter pops one and the basket sinks; with the last one gone it falls
+  and the game ends. Dots under the basket show the words won and lost; after the last word it flies away.
 - **Gapfill** – the connected text with gaps and a word bank (answers + extra wrong words); drag words into gaps,
   swap or move them back, check everything at the end. Wrong words are marked and the answer shown.
 - **Drowning** – a red British telephone box fills with water, a mortarboard floats on the surface; a correct
@@ -150,6 +155,8 @@ session is `gameSeed(sessionSeed, gameIndex)`. Rules settled in F1:
 - Gapfill: the text must have at least 4 gaps and match its gap list one to one, otherwise the game reports it.
   Extra bank words come from the distractors of the gap words and are never an answer anywhere in the text.
 - Memory: a list too short for the asked board gets the largest square board it can fill.
+- Word search: up to 12 seeded layout attempts; the first one with every word placed wins, otherwise the one that
+  placed the most.
 - Drowning: water fills in 60 / 40 / 25 seconds (slow / normal / fast); a correct answer drains 20 / 15 / 12 %.
 
 Local preview of all seven games with the sample list: `npm run serve`, then `/dev/preview.html`.
@@ -244,6 +251,11 @@ Each phase ends with a DEVLOG entry, a demo of what was built and how it was ver
 - **F6 Launch** – Hub product (`slug: wordnerd`), end-to-end test with a new teacher account, Hub listing.
 
 ## 13. Open questions
+
+- **A goal for the whole set (András, 2026-11-21: "later").** Proposal to decide in F4: each game ends with
+  1–3 stars from its own result (e.g. memory moves, matching mistakes, crossword rows before the secret word);
+  the student sees the set as a path of games with their stars and a total; the teacher's monitor shows the same.
+  No accounts, so it lives only inside the session.
 
 - Upload limits exactly (MB, words); photo upload in the first version or later.
 - Manually added word: fill by hand or `wordnerd/enrich` for credits.

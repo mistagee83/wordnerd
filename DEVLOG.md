@@ -100,3 +100,26 @@
 
 **Not verified**
 - Real phone touch (only the emulated 375 px viewport with mouse-driven pointer events).
+
+## F1 revision 2 – word search directions, crossword goal, hangman lives (2026-11-21)
+
+**Feedback (András)**: word search showed mostly one direction – are diagonals used? Crossword: knowing the secret
+word early does nothing – what is the goal? Hangman: 8 words is too many and 12 lives per word too many; the lives
+should cover several words (e.g. 4 words with 12 lives). A goal for the whole set: later.
+
+**Changed**
+- Word search: directions balanced (least used direction first) and up to 12 seeded layout attempts. Over 300
+  "medium" puzzles each of the four directions gets 24–26 % of the words (before: long words mostly across).
+- Crossword: the goal is the secret word. New setting `guesses` (default 3), engine helper `secretCorrect`; the UI
+  has a secret-word bar whose tiles fill from solved rows and a guess field; a right guess or all rows solved ends
+  the game and shows the unsolved answers greyed. Result includes `secretFound`, `guessedEarly`, guesses and
+  reveals used.
+- Hangman: setting `parts` → `lives`, shared by all the words; defaults 4 words / 12 lives (limits 1–8 / 4–12).
+  `newRound(missesSoFar)` carries the misses on. One balloon scene for the whole game, progress dots per word.
+- SPEC 13: a proposal for a goal for the whole set (stars per game, path view), to decide in F4.
+
+**Verified**
+- `npm test`: 37 pass (new: shared lives carry over, default 4/12, secret-word guess, direction balance).
+- Browser: crossword with 3 rows solved (tiles S I B), a wrong guess (2 left), then the right guess ends the game
+  and greys the 4 unsolved rows; hangman two words won with 2 misses each (8 balloons left), third word lost the
+  rest and the game ended (dots: won, won, lost). Word search layout shows across, down and diagonal words.
