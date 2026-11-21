@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Firebase
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+storage-debug.log*
+ui-debug.log*
+emulator-data/
+.runtimeconfig.json
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+functions/.env
+functions/.env.*
+!functions/.env.example
+functions/.secret.local
+*.key
+service-account*.json
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Static build output (scripts/build-web.mjs)
+dist/
+
+# Generated copies (scripts/sync-engines.mjs): engines/ and the Hub modules for the functions
+functions/engines/

@@ -1,0 +1,69 @@
+rules_version = '2';
+// products/** publikus (borítóképek), files/** csak aláírt URL-lel (Function); feladatlapok/** a Writing Review-é.
+// A mrashub EGYETLEN telepített Storage-szabálya: az appok blokkjai ide kerülnek, az app repójából nem telepíthető.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null &&
+        request.auth.token.email in
+          firestore.get(/databases/(default)/documents/settings/admins).data.emails;
+    }
+    function validUpload() {
+      return request.resource.size < 10 * 1024 * 1024 &&
+        (request.resource.contentType.matches('image/.*') ||
+         request.resource.contentType == 'application/pdf' ||
+         request.resource.contentType == 'application/zip');
+    }
+
+    match /products/{path=**} {
+      allow read: if true;
+      allow write: if isAdmin() && validUpload();
+      allow delete: if isAdmin();
+    }
+    match /files/{path=**} {
+      allow read: if false;
+      allow write: if isAdmin() && validUpload();
+      allow delete: if isAdmin();
+    }
+
+    // ---- Writing Review (a WR repó storage.rules-ának blokkja; változás: előbb ott) ----
+    function belepve() {
+      return request.auth != null;
+    }
+
+    function tanar() {
+      return belepve()
+        && 'szerep' in request.auth.token
+        && request.auth.token.szerep == 'tanar';
+    }
+
+    function kepVagyPdf() {
+      return request.resource.contentType.matches('image/.*')
+        || request.resource.contentType == 'application/pdf';
+    }
+
+    function maxTizMega() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // ══════════════════════════════════════════
+    // FELADATLAPOK
+    // A diák nem innen olvassa: a feladat dokumentumban tárolt
+    // tokenes letöltési URL-t használja.
+    // ══════════════════════════════════════════
+    match /feladatlapok/{tanarUid}/{fajl} {
+      allow read: if belepve() && request.auth.uid == tanarUid;
+
+      allow create: if resource == null
+        && tanar()
+        && request.auth.uid == tanarUid
+        && kepVagyPdf()
+        && maxTizMega();
+
+      // Feltöltött feladatlapot nem írunk felül és nem törlünk kliensről –
+      // a feladat dokumentumok hivatkoznak rá.
+      allow update, delete: if false;
+    }
+    // ---- end Writing Review ----
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "predeploy": [
+      "node scripts/deny-deploy.mjs firestore"
+    ]
+  },
+  "storage": {
+    "rules": "storage.rules",
+    "predeploy": [
+      "node scripts/deny-deploy.mjs storage"
+    ]
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "wordnerd",
+      "runtime": "nodejs22",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "node scripts/sync-engines.mjs"
+      ]
+    }
+  ],
+  "emulators": {
+    "singleProjectMode": true,
+    "auth": { "host": "127.0.0.1", "port": 9099 },
+    "functions": { "host": "127.0.0.1", "port": 5001 },
+    "firestore": { "host": "127.0.0.1", "port": 8080 },
+    "storage": { "host": "127.0.0.1", "port": 9199 },
+    "ui": { "enabled": true, "host": "127.0.0.1", "port": 4000 }
+  }
+}

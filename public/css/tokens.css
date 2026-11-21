@@ -1,0 +1,37 @@
+/* WordNerd raw design tokens. The palette comes from the 2013-2014 WordNerd site
+   (old css/wn_style.css, games.css and the screens in reference/screens/), kept as it was
+   (decision 2026-11-21). Role variables (--c-*) live only in base.css; pages never use raw tokens. */
+:root {
+  /* Board: the dark, textured brown background */
+  --wn-board-900: #1f1913;
+  --wn-board-800: #2b231b;
+  --wn-board-700: #3a2f24;
+
+  /* Wood: tabs, panels, buttons */
+  --wn-wood-700: #6e4a12;
+  --wn-wood-600: #735a28;
+  --wn-wood-500: #8a4f26;
+  --wn-wood-400: #a3602e;
+  --wn-wood-line: #b57b5e;
+
+  /* Amber: lettering and highlights (logo outline, tab labels) */
+  --wn-amber-500: #f8b856;
+  --wn-amber-400: #e5ba66;
+  --wn-orange-500: #ff9a00;
+
+  /* Cream: input fields, light surfaces */
+  --wn-cream-100: #fcf4e7;
+  --wn-cream-200: #f1ddba;
+
+  /* Feedback */
+  --wn-green-500: #72d90a;
+  --wn-red-600: #af111e;
+
+  /* Type: old site used Tenor Sans + Source Sans Pro (Google Fonts) */
+  --wn-font-display: 'Tenor Sans', 'Source Sans 3', system-ui, sans-serif;
+  --wn-font-body: 'Source Sans 3', system-ui, sans-serif;
+
+  --wn-radius-sm: 6px;
+  --wn-radius-md: 10px;
+  --wn-space: 16px;
+}

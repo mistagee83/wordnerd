@@ -1,0 +1,49 @@
+/* Role variables and base styles. Load tokens.css first. */
+:root {
+  --c-bg: var(--wn-board-800);
+  --c-bg-deep: var(--wn-board-900);
+  --c-panel: var(--wn-board-700);
+  --c-wood: var(--wn-wood-500);
+  --c-wood-line: var(--wn-wood-line);
+  --c-text: var(--wn-cream-100);
+  --c-text-muted: var(--wn-cream-200);
+  --c-accent: var(--wn-amber-500);
+  --c-accent-strong: var(--wn-orange-500);
+  --c-field: var(--wn-cream-100);
+  --c-field-text: var(--wn-board-900);
+  --c-ok: var(--wn-green-500);
+  --c-error: var(--wn-red-600);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+body {
+  min-height: 100vh;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--wn-font-body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+h1, h2, h3 { font-family: var(--wn-font-display); color: var(--c-accent); font-weight: 400; line-height: 1.2; }
+
+a { color: var(--c-accent); }
+
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 var(--wn-space); }
+
+.btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border: 1px solid var(--c-wood-line);
+  border-radius: var(--wn-radius-sm);
+  background: var(--c-wood);
+  color: var(--c-accent);
+  font: 600 1rem var(--wn-font-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:hover, .btn:focus-visible { color: var(--c-accent-strong); }

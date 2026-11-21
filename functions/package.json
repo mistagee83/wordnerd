@@ -1,0 +1,14 @@
+{
+  "name": "wordnerd-functions",
+  "private": true,
+  "description": "WordNerd - Cloud Functions (codebase: wordnerd)",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {}
+}

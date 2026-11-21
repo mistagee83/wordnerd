@@ -1,0 +1,12 @@
+# Cloudflare Pages headers. The whole site is noindex until the Hub lists WordNerd.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Robots-Tag: noindex
+
+/*.html
+  Cache-Control: no-cache
+/*.js
+  Cache-Control: no-cache
+/*.css
+  Cache-Control: no-cache
