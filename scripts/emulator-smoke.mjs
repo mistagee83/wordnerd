@@ -11,7 +11,7 @@ const hosts = await (await fetch(`http://${HUB}/emulators`)).json();
 const at = (name) => `http://${hosts[name].host}:${hosts[name].port}`;
 const AUTH = `${at('auth')}/identitytoolkit.googleapis.com/v1`;
 const FS = `${at('firestore')}/v1/projects/${PROJECT}/databases/(default)/documents`;
-const FN = `${at('functions')}/${PROJECT}/europe-west1/wnAnalyze`;
+const FN_BASE = `${at('functions')}/${PROJECT}/europe-west1`;
 const OWNER = { Authorization: 'Bearer owner', 'Content-Type': 'application/json' }; // emulator admin access
 
 const toValue = (v) => {
@@ -52,8 +52,8 @@ async function signUp(anonymous = false) {
   return { uid: j.localId, token: j.idToken };
 }
 
-async function call(token, data) {
-  const r = await fetch(FN, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ data }) });
+async function call(token, data, fn = 'wnAnalyze') {
+  const r = await fetch(`${FN_BASE}/${fn}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ data }) });
   const j = await r.json();
   return j.error ? { error: j.error.status, reason: j.error.details?.reason, details: j.error.details } : { result: j.result };
 }
@@ -132,5 +132,35 @@ await setDoc('settings/credits', { prices: {} });
 await setDoc(`users/${teacher.uid}`, { email: 'teacher@example.com', credits: { purchased: 10, purchasedExpiresAt: future } });
 assert.equal((await call(teacher.token, req())).reason, 'no-price');
 ok('no price in settings/credits: refused (no free calls)');
+
+// 10–11. the library: list, open, edit, delete; another teacher and a student see nothing
+const listId = r1.result.listId;
+const lib = await call(teacher.token, {}, 'wnListLists');
+assert.ok(lib.result.lists.some((l) => l.id === listId && l.words === 20), JSON.stringify(lib));
+const got = await call(teacher.token, { id: listId }, 'wnGetList');
+assert.equal(got.result.list.items.length, 20);
+assert.equal(got.result.list.ownerUid, undefined);
+const items = got.result.list.items.filter((it) => it.id !== 'w07')
+  .map(({ id, term, translation, definition, category }) => ({ id, term, translation, definition, category }));
+items[0].translation = 'vigyáz valakire';
+items.push({ term: 'twin', translation: 'iker', definition: 'one of two children born together' });
+const saved = await call(teacher.token, { id: listId, title: 'Edited', items }, 'wnSaveList');
+assert.equal(saved.result?.list?.title, 'Edited', JSON.stringify(saved));
+assert.equal(saved.result.list.items.length, 20);
+assert.equal(saved.result.list.cloze.gaps.length, 10);
+const stored = await getDoc(`wnLists/${listId}`);
+assert.equal(stored.items[0].translation, 'vigyáz valakire');
+assert.equal(stored.items.at(-1).id, 'w21');
+assert.equal((await call(teacher.token, { id: listId, items: items.slice(0, 2) }, 'wnSaveList')).reason, 'too-few-words');
+const other = await signUp();
+assert.equal((await call(other.token, { id: listId }, 'wnGetList')).reason, 'list');
+assert.equal((await call(other.token, { id: listId, items }, 'wnSaveList')).reason, 'list');
+assert.equal((await call(other.token, { id: listId }, 'wnDeleteList')).reason, 'list');
+assert.deepEqual((await call(other.token, {}, 'wnListLists')).result.lists, []);
+assert.equal((await call(student.token, {}, 'wnListLists')).reason, 'teacher-only');
+ok('library: list, open, edit (a deleted word\'s gap becomes text), refusals; other teachers and students see nothing');
+assert.deepEqual((await call(teacher.token, { id: listId }, 'wnDeleteList')).result, { ok: true });
+assert.equal(await getDoc(`wnLists/${listId}`), null);
+ok('delete removes the list');
 
 console.log(`\nemulator smoke test: ${step} checks passed`);

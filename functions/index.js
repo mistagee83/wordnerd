@@ -5,6 +5,7 @@ import { onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { REGION } from './config.js';
 import { analyze } from './analyze.js';
+import * as lists from './lists.js';
 
 setGlobalOptions({ region: REGION, maxInstances: 10 });
 
@@ -16,3 +17,11 @@ export const wnAnalyze = onCall(
   { secrets: [GEMINI_KEY], timeoutSeconds: 300, memory: '512MiB' },
   (req) => analyze(req, { apiKey: () => GEMINI_KEY.value() }),
 );
+
+export const wnListLists = onCall(lists.listLists);
+export const wnGetList = onCall(lists.getList);
+export const wnSaveList = onCall(lists.saveList);
+export const wnDeleteList = onCall(lists.deleteList);
+
+// Emulator only: credits and a price for local end-to-end trials. Not part of a production deploy.
+export const wnDevSeed = process.env.FUNCTIONS_EMULATOR === 'true' ? onCall(lists.devSeed) : undefined;

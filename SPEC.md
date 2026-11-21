@@ -166,10 +166,12 @@ Local preview of all seven games with the sample list: `npm run serve`, then `/d
 | What | Condition |
 |---|---|
 | Analysis (`wordnerd/analyze`) | credit balance (signup gift counts), no subscription needed |
-| Editing the list, previewing all games, starting a session, live monitor of a running session | signed-in teacher, free |
-| **History**: results of closed sessions, saved list library, restarting from an old list | **Hub pass** (`entitlements.wordnerd` or `entitlements.all` active) |
+| The teacher's own word lists (the library: all of them, any age), editing them, previewing all games, starting a session from any list, live monitor of a running session | signed-in teacher, free |
+| **History**: the played sessions (rooms) and their results after they closed | **Hub pass** (`entitlements.wordnerd` or `entitlements.all` active) |
 
-Data without a Hub pass is kept for 30 days (open question), so a teacher who subscribes later sees earlier work.
+Correction (András, 2026-11-21): the word lists are the teacher's library and always visible; only the history of
+played sessions needs the Hub pass. Session results without a Hub pass are kept for 30 days (open question), so a
+teacher who subscribes later sees earlier sessions.
 Credit prices come from the Hub's `settings/credits` (`"wordnerd/analyze"`, `"wordnerd/enrich"`); numbers are set
 by András after testing. No Stripe code in this repo; buying happens on the Hub's `/account`.
 
@@ -262,7 +264,7 @@ structure are shared with the Hub).
 - No Netlify (decided 2026-11-21): testing happens on the live address, which is fine while the Hub does not list
   WordNerd (the Hub is not advertised before December 2026). The site is `noindex` until launch.
 - Static front end on Cloudflare Pages from `main` (build `node scripts/build-web.mjs`, output `dist`), like the Hub
-  and Hubbaloo. Open: Cloudflare Pages vs Firebase Hosting (WR, QotD) – decide in F3.
+  and Hubbaloo (decided 2026-11-21). András creates the Pages project and the DNS record.
 - The Hub must add the origin to `shared/sso.js` `APP_ORIGINS` / `APP_NAMES` and to Firebase Auth authorized
   domains (Hub repo change, F3).
 
@@ -297,4 +299,3 @@ Each phase ends with a DEVLOG entry, a demo of what was built and how it was ver
 - Retention without a Hub pass (30 days?); deleting nicknames (GDPR); the Hub's account deletion must also remove
   WordNerd data.
 - Results: narrow client writes or callable.
-- Hosting: Cloudflare Pages or Firebase Hosting.
