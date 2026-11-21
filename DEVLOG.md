@@ -230,3 +230,12 @@ of `wordnerd/analyze` in the Hub admin. Secret Manager still has no `WN_GEMINI_A
 - Not done: a signed-in live analysis (needs a real teacher account: `http://localhost:5174/teacher.html?live`
   works before the domain exists, localhost is an authorized domain by default); Hub push + Hub functions deploy
   for one-click sign-in; Cloudflare Pages, DNS, authorized domain; `dev` → `main`.
+
+## Hub one-click sign-in (2026-11-21, approved by András)
+
+- Hub `dev` pushed (`de98f10`: `shared/sso.js` lists `https://wordnerd.mrandrewshub.com`), `functions:hub` deployed:
+  `createSsoCode` / `redeemSsoCode` now accept the WordNerd origin (the deployed copy `functions/shared/sso.js`
+  contains it).
+- Not yet: the Hub site's `main` (its "Open app" button checks the same list in the browser). The push to the Hub's
+  `main` was stopped by the permission check and waits for András's explicit go-ahead. `origin/main..dev` holds only
+  docs, the already deployed `functions/.env.mrashub` and this `shared/sso.js` change.
