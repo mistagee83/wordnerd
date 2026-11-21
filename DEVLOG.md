@@ -329,3 +329,13 @@ the local server serves extension-less pages like Pages.
   page has the room set-up; the room callables refuse unauthenticated calls with `sign-in`.
 - Not tried live: opening a room and joining (needs András's teacher account; a test join would create an anonymous
   account in the production project).
+
+## Fix: a closed room kept playing on the phone (2026-11-21)
+
+András closed a live room and could still play on his phone. The live logs show no result submitted after the
+close (the server refused nothing because nothing arrived; it would have refused with `room-closed`), but the
+student page never asked the server again after loading the path. Now `js/play.js` checks the room before starting a
+game, every 15 s on the path and during a game, and when the page comes back to the front; a closed room stops the
+game and says "Your teacher closed the room…"; a result refused with `room-closed` says it could not be saved.
+Checked against the emulators: closing while a student plays Drowning stopped the game after about 7 s with the
+message, and the path's buttons were disabled.

@@ -81,6 +81,39 @@ async function openRoom(roomId) {
   S.me = res.me;
   S.view = 'path';
   render();
+  watchRoom();
+}
+
+// The teacher may close the room at any time (fixed 2026-11-21: a phone kept playing a closed room, its results
+// were refused but the student was not told). The path and a running game check the room every 15 s and when
+// the page comes back to the front; a closed room stops the game and says so.
+const WATCH_MS = 15000;
+let watchTimer = null;
+function watchRoom() {
+  clearInterval(watchTimer);
+  watchTimer = setInterval(checkRoom, WATCH_MS);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.room) checkRoom(); });
+
+async function checkRoom() {
+  if (!S.room || S.room.status !== 'open') return S.room?.status === 'open';
+  try {
+    const res = await fb.call('wnPlayRoom', { roomId: S.room.id });
+    S.room.status = res.room.status;
+    S.me = res.me;
+  } catch { return true; } // offline for a moment: keep playing, the result is checked when it is sent
+  if (S.room.status !== 'open') { roomClosed(); return false; }
+  if (S.view === 'path') render(); // fresh stars (e.g. the same student on another device)
+  return true;
+}
+
+function roomClosed(text = 'Your teacher closed the room. Your stars are saved; you cannot play any more.') {
+  clearInterval(watchTimer);
+  S.room.status = 'closed';
+  S.closedNote = text;
+  S.view = 'path';
+  render();
+  window.scrollTo(0, 0);
 }
 
 async function join(e) {
@@ -138,10 +171,10 @@ function pathView() {
       h('div', { class: 'p-who' }, h('span', { class: 'p-nick' }, me.nickname), h('span', { class: 'p-total' }, starRow(1, 1, 16), ` ${p.stars} / ${p.maxStars}`))),
     h('main', { class: 'p-main' },
       h('h1', { class: 'p-title' }, room.title),
-      closed ? h('p', { class: 'msg msg-error' }, 'This room is closed: you can look at your stars, but not play any more.') : h('p', { class: 'p-hint' }, `${p.done} of ${p.games.length} games done. Play them in any order – you can play again to get more stars.`),
+      closed ? h('p', { class: 'msg msg-error', role: 'alert' }, S.closedNote ?? 'This room is closed: you can look at your stars, but not play any more.') : h('p', { class: 'p-hint' }, `${p.done} of ${p.games.length} games done. Play them in any order – you can play again to get more stars.`),
       errorLine(),
       h('ol', { class: 'path' }, p.games.map((g) => h('li', { class: `stop${g.done ? ' is-done' : ''}` },
-        h('button', { type: 'button', class: 'stop-btn', disabled: closed, onclick: () => playGame(g.index) },
+        h('button', { type: 'button', class: 'stop-btn', disabled: closed || S.busy, onclick: () => playGame(g.index) },
           h('span', { class: 'stop-num' }, g.index + 1),
           h('span', { class: 'stop-body' }, h('span', { class: 'stop-name' }, g.title), starRow(g.stars, 3, 20)),
           h('span', { class: 'stop-go' }, closed ? '' : g.done ? 'Play again' : 'Play')))))),
@@ -149,7 +182,12 @@ function pathView() {
 }
 
 // ---------------------------------------------------------------------------------------------------
-function playGame(index) {
+async function playGame(index) {
+  // ask the server first: the teacher may have closed the room since the path was shown
+  S.busy = true; render();
+  const open = await checkRoom();
+  S.busy = false;
+  if (!open) return;
   const g = S.room.games[index];
   const puzzle = generateGame(g.type, S.room.listSnapshot, g.settings, gameSeed(S.room.seed, index));
   S.error = '';
@@ -173,6 +211,7 @@ async function finish(index, r) {
     S.me.path = res.path;
     S.game.finished = { stars: res.stars, best: res.best.stars, attempts: res.best.attempts };
   } catch (err) {
+    if (err.reason === 'room-closed') { roomClosed('Your teacher closed the room, so this last result could not be saved. Your earlier stars are kept.'); return; }
     S.game.finished = { error: reasonText(err), retry: () => { S.game.finished = null; finish(index, r); } };
   }
   renderFinish();
