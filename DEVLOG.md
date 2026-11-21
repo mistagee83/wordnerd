@@ -270,3 +270,8 @@ domain – András) and a Hub product with `appUrl` (F6).
   the live teacher page shows the sign-in panel without console errors and without the emulator button.
 - Not tried: a real sign-in and analysis on the live site (needs András's account); the Hub's "Open app" (needs a
   Hub product with `appUrl`, F6).
+
+## Naming: Rooms (2026-11-21)
+
+András: "Sessions" is called **Rooms** – the tab, the button ("Open a room"), the placeholder texts, SPEC terms and
+the planned collection `wnRooms` (was `wnSessions`); `gameSeed(roomSeed, gameIndex)`. Not live yet (dev only).

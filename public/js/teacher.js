@@ -1,6 +1,6 @@
 // WordNerd teacher page (F3): sign-in (Hub account, one click from the Hub), the dashboard in the old
 // WordNerd layout (wooden tabs around a central panel, name bar below), new list (upload + analysis),
-// the library of lists, the list editor with game previews. Sessions and results come in F4/F5.
+// the library of lists, the list editor with game previews. Rooms and results come in F4/F5.
 // Plain DOM (h()), no framework. Every server call goes through the wn* callables.
 import {
   onAuthStateChanged, signInWithPopup, signInWithRedirect, GoogleAuthProvider, signOut,
@@ -150,7 +150,7 @@ onAuthStateChanged(fb.auth, async (user) => {
 });
 
 // ---------------------------------------------------------------------------------------------------
-// routing: #lists, #new, #list/<id>, #sessions, #results
+// routing: #lists, #new, #list/<id>, #rooms, #results
 window.addEventListener('hashchange', () => route());
 window.addEventListener('beforeunload', (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
 
@@ -166,7 +166,7 @@ async function route() {
   }
   // a note set just before navigating ("Your list is ready.") survives this one route change
   S.error = ''; S.note = S.flash ?? ''; S.flash = null; S.rowError = null;
-  S.view = ['lists', 'new', 'list', 'sessions', 'results'].includes(view) ? view : 'lists';
+  S.view = ['lists', 'new', 'list', 'rooms', 'results'].includes(view) ? view : 'lists';
   render();
   try {
     if (S.view === 'lists') { S.lists = (await fb.call('wnListLists', {})).lists; }
@@ -240,7 +240,7 @@ function signInView() {
 const ICONS = {
   lists: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11M9 8h6',
   new: 'M6 3h8l4 4v14H6zM14 3v4h4M12 11v6M9 14h6',
-  sessions: 'M5 4l14 8-14 8z',
+  rooms: 'M5 4l14 8-14 8z',
   results: 'M4 20h16M7 16v-5M12 16V7M17 16v-8',
 };
 const icon = (name) => s('svg', { viewBox: '0 0 24 24', class: 'icon', 'aria-hidden': 'true' },
@@ -260,7 +260,7 @@ function dashboard() {
     h('header', { class: 'dash-top' }, h('a', { href: '#lists', class: 'dash-logo' }, h('img', { src: LOGO, alt: 'WordNerd' }))),
     h('nav', { class: 'tabs tabs-left', 'aria-label': 'Lists' }, tab('lists', 'My lists'), tab('new', 'New list')),
     $panel,
-    h('nav', { class: 'tabs tabs-right', 'aria-label': 'Sessions' }, tab('sessions', 'Sessions'), tab('results', 'Results')),
+    h('nav', { class: 'tabs tabs-right', 'aria-label': 'Rooms' }, tab('rooms', 'Rooms'), tab('results', 'Results')),
     $namebar);
 }
 function renderNamebar() { if ($namebar) $namebar.replaceChildren(...namebarContent()); }
@@ -285,8 +285,8 @@ function panelContent() {
   switch (S.view) {
     case 'new': return newListView();
     case 'list': return listView();
-    case 'sessions': return comingSoon('Sessions', 'Start a set of games from a list and share it with your class through a code. Coming in the next update.');
-    case 'results': return comingSoon('Results', 'See what each student completed, and which words were the hardest. The history of past sessions comes with the Hub pass.');
+    case 'rooms': return comingSoon('Rooms', 'Open a room with a set of games from a list, and your class joins with a code. Coming in the next update.');
+    case 'results': return comingSoon('Results', 'See what each student completed, and which words were the hardest. The history of past rooms comes with the Hub pass.');
     default: return listsView();
   }
 }
@@ -538,7 +538,7 @@ function listView() {
         h('span', { class: 'game-name' }, GAMES[id].meta.title),
         h('span', { class: 'game-blurb' }, test.ok ? GAME_BLURB[id] : `Not available: ${test.reason}`)));
     })),
-    h('button', { type: 'button', class: 'btn btn-primary btn-wide', disabled: true, title: 'Coming in the next update' }, 'Start a session'),
+    h('button', { type: 'button', class: 'btn btn-primary btn-wide', disabled: true, title: 'Coming in the next update' }, 'Open a room'),
     h('p', { class: 'muted small' }, 'Sharing the games with your class through a code comes in the next update.'));
 
   return [

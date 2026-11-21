@@ -24,7 +24,7 @@ shop, PvP arena, Wordpong. The old skill-tree difficulty steps survive as **teac
 1. **One AI call, all content up front.** The analysis produces every field any game can use. The teacher pays
    credits once; every game after that is free and instant.
 2. **Games are functions, not stored copies:** `puzzle = generator(list, settings, seed)`. Same input, same puzzle,
-   on every device. All students in a session get the same word search; nothing per game is stored.
+   on every device. All students in a room get the same word search; nothing per game is stored.
 3. **The model never decides structure.** Grid placement, crossword layout, which word goes where: code. The model
    only fills data fields, validated against a JSON schema.
 4. **Students never talk to AI** and never see other students' answers.
@@ -45,8 +45,8 @@ shop, PvP arena, Wordpong. The old skill-tree difficulty steps survive as **teac
    (`wordnerd/enrich`, open question).
 5. **Build the set** – choose games (all proposed by default), difficulty settings, optionally a subset of words.
    Preview of every game.
-6. **Share** – "Start session" gives a 6-character code and a QR code. Students open the WordNerd address, enter
-   the code and a nickname (anonymous Firebase account, as in Hubbaloo) and play at their own pace. The session
+6. **Share** – "Open a room" gives a 6-character code and a QR code. Students open the WordNerd address, enter
+   the code and a nickname (anonymous Firebase account, as in Hubbaloo) and play at their own pace. The room
    lives until the teacher closes it or it expires (7 days, open question).
 7. **Monitor** – live table: student × game (done / in progress / score / time), plus **per-word error stats**
    ("most students missed *reluctant*").
@@ -142,7 +142,7 @@ connected; output works for multi-word terms and non-ASCII letters.
 Engine contract (built in F1): each game module exports `meta`, `defaults`, `limits`, `normalizeSettings()` and
 `generate(list, settings, seed)`, which returns `{ ok: true, game, settings, … }` or `{ ok: false, reason }` and
 never throws. Settings are clamped to `limits`; unknown values fall back to the defaults. The seed of one game in a
-session is `gameSeed(sessionSeed, gameIndex)`. Rules settled in F1:
+room is `gameSeed(roomSeed, gameIndex)`. Rules settled in F1:
 
 - Letter games use `engines/lang.js`: graphemes (an accented letter is one letter), locale upper case (a letter
   whose upper case is longer, like German ß, stays as it is), grid letters without spaces/hyphens/apostrophes,
@@ -166,12 +166,12 @@ Local preview of all seven games with the sample list: `npm run serve`, then `/d
 | What | Condition |
 |---|---|
 | Analysis (`wordnerd/analyze`) | credit balance (signup gift counts), no subscription needed |
-| The teacher's own word lists (the library: all of them, any age), editing them, previewing all games, starting a session from any list, live monitor of a running session | signed-in teacher, free |
-| **History**: the played sessions (rooms) and their results after they closed | **Hub pass** (`entitlements.wordnerd` or `entitlements.all` active) |
+| The teacher's own word lists (the library: all of them, any age), editing them, previewing all games, starting a room from any list, live monitor of a running room | signed-in teacher, free |
+| **History**: the played rooms and their results after they closed | **Hub pass** (`entitlements.wordnerd` or `entitlements.all` active) |
 
 Correction (András, 2026-11-21): the word lists are the teacher's library and always visible; only the history of
-played sessions needs the Hub pass. Session results without a Hub pass are kept for 30 days (open question), so a
-teacher who subscribes later sees earlier sessions.
+played rooms needs the Hub pass. Room results without a Hub pass are kept for 30 days (open question), so a
+teacher who subscribes later sees earlier rooms.
 Credit prices come from the Hub's `settings/credits` (`"wordnerd/analyze"`, `"wordnerd/enrich"`); numbers are set
 by András after testing. No Stripe code in this repo; buying happens on the Hub's `/account`.
 
@@ -183,11 +183,11 @@ Firestore, collections prefixed `wn`. The rules block lives in the Hub's `firest
 - `wnLists/{listId}` – `ownerUid`, `title`, `topic`, `level`, `targetLang`, `supportLang`, `items[]` (section 5),
   `text` (the new AI text), `source` (`{ kind: text|pdf|image, title, wordCount }`, never the file),
   `createdAt`, `updatedAt`. Owner reads; the analysis function creates; the owner edits allowed fields.
-- `wnSessions/{sessionId}` – `ownerUid`, `code`, `listSnapshot` (copy at start, so later edits do not change a
+- `wnRooms/{roomId}` – `ownerUid`, `code`, `listSnapshot` (copy at start, so later edits do not change a
   running set), `games[]` (`{ type, settings }`), `seed`, `status` (open|closed), `expiresAt`, `createdAt`.
-- `wnSessions/{sessionId}/players/{anonUid}` – `nickname`, `joinedAt`, `results{ <gameIndex>: { score, max,
+- `wnRooms/{roomId}/players/{anonUid}` – `nickname`, `joinedAt`, `results{ <gameIndex>: { score, max,
   timeMs, completedAt, misses: { <itemId>: n } } }`.
-- `wnCodes/{code}` → `sessionId` (function only).
+- `wnCodes/{code}` → `roomId` (function only).
 - `users/{uid}` and `creditLedger` belong to the Hub: read only, except the credit spend/refund that the Hub's
   credit pattern prescribes for every app (copy of `shared/credits.js` in `engines/hub/`).
 
@@ -199,7 +199,7 @@ vocabulary practice tool) or through a callable.
 Codebase `wordnerd`, Node 22, 2nd gen, europe-west1, secrets in Secret Manager.
 
 - `wnAnalyze` (callable, teacher; built in F2) – see "Analysis" below.
-- `joinSession` (callable, anonymous) – code check, session open, nickname unique in the session.
+- `joinRoom` (callable, anonymous) – code check, room open, nickname unique in the room.
 - `wnListLists`, `wnGetList`, `wnSaveList`, `wnDeleteList` (callables, teacher; F3): the library. Only functions touch
   `wnLists` (no client rules needed; the Hubbaloo pattern). `wnSaveList` applies `engines/lists/edit.js`: title; per
   word term, translation, definition, category; delete; reorder; add a word by hand (term, translation and
@@ -207,7 +207,7 @@ Codebase `wordnerd`, Node 22, 2nd gen, europe-west1, secrets in Secret Manager.
   gapfill gap becomes plain text and the other gaps are renumbered; 4–40 words. Someone else's list answers
   exactly like a missing one (`not-found` / `list`).
 - `wnDevSeed` exists only in the emulator: 50 credits and a price for the caller, for local trials.
-- Later: `enrichItem`, cleanup of expired sessions and old data.
+- Later: `enrichItem`, cleanup of expired rooms and old data.
 
 ### Analysis (F2)
 
@@ -256,9 +256,9 @@ structure are shared with the Hub).
 
   | Old | New |
   |---|---|
-  | My dictionary: word list \| word groups \| game picker + "Load exercise" | **My lists**: list editor \| the teacher's lists \| games + settings + "Start session" |
+  | My dictionary: word list \| word groups \| game picker + "Load exercise" | **My lists**: list editor \| the teacher's lists \| games + settings + "Open a room" |
   | My statistics | **Results**: live monitor; History (Hub pass) |
-  | Exercise map, Rewards, Skills, Shop, Room | gone; in their place **New list** (upload) and **Sessions** |
+  | Exercise map, Rewards, Skills, Shop, My room (the old avatar room) | gone; in their place **New list** (upload) and **Rooms** |
   | Name bar: player name, level, XP bar, basket | teacher name, credit balance, "Get credits" (→ Hub `/account`) |
 
 - The old character (Word Nerd figure) is optional decoration at most (empty states, loading).
@@ -272,13 +272,13 @@ structure are shared with the Hub).
 
 `public/teacher.html` + `public/js/teacher.js`. Sign-in as in the other Hub apps (Google, e-mail and password,
 forgotten password, "Create your account" on the Hub, one click from the Hub with `#sso=`). The dashboard follows the
-old layout: logo plank on top, wooden tabs **My lists**, **New list** (left) and **Sessions**, **Results** (right)
+old layout: logo plank on top, wooden tabs **My lists**, **New list** (left) and **Rooms**, **Results** (right)
 around the central panel, the name bar below with the live credit balance (the Hub's `users/{uid}` read directly,
 the price from `settings/credits`) and "Get credits" (Hub `/account`). Under 900 px the four tabs become a bottom
 bar. Views: My lists (cards), New list (paste or file, level, translation language – remembered –, number of words,
 title, focus, the price and the balance; about 30 s waiting screen), the list editor (words left, games right,
 sticky save bar, unsaved-changes guard, delete list), and a preview overlay for every game with its settings.
-Sessions and Results are placeholders until F4/F5. Locally the page uses the emulators; `?live` uses the project.
+Rooms and Results are placeholders until F4/F5. Locally the page uses the emulators; `?live` uses the project.
 
 ## 11. Hosting
 
@@ -304,7 +304,7 @@ Each phase ends with a DEVLOG entry, a demo of what was built and how it was ver
 - **F2 Analysis** – JSON schema, versioned prompt, `analyzeText` with credit spend/refund, emulator tests,
   Hub rules block, price row in `settings/credits`.
 - **F3 Teacher app** – sign-in and SSO, dashboard in the old layout, upload, list editor, game previews; hosting.
-- **F4 Sessions** – start session (code, QR), student join, the seven games playable on a phone, results.
+- **F4 Rooms** (named "Rooms", not "Sessions": András, 2026-11-21) – open a room (code, QR), student join, the seven games playable on a phone, results.
 - **F5 Monitor and History** – live monitor with per-word stats, History behind the Hub pass, retention.
 - **F6 Launch** – Hub product (`slug: wordnerd`), end-to-end test with a new teacher account, Hub listing.
 
@@ -313,7 +313,7 @@ Each phase ends with a DEVLOG entry, a demo of what was built and how it was ver
 - **A goal for the whole set (András, 2026-11-21: "later").** Proposal to decide in F4: each game ends with
   1–3 stars from its own result (e.g. memory moves, matching mistakes, crossword rows before the secret word);
   the student sees the set as a path of games with their stars and a total; the teacher's monitor shows the same.
-  No accounts, so it lives only inside the session.
+  No accounts, so it lives only inside the room.
 
 - Upload limits: set in F2 as 40–2500 words of text or a 4 MB PDF/image (photo upload included); to revisit after
   real use.
@@ -322,7 +322,7 @@ Each phase ends with a DEVLOG entry, a demo of what was built and how it was ver
   ≈ $0.011 (18 s). From 2027-01-01 the model price doubles (≈ $0.03). Against the Hub's scale (1 credit ≈ one
   Writing Review check, QotD generate = 3 credits at $0.033) **2 credits** looks right.
 - Manually added word: fill by hand or `wordnerd/enrich` for credits.
-- Session expiry; can a closed session be reopened.
+- Room expiry; can a closed room be reopened.
 - Retention without a Hub pass (30 days?); deleting nicknames (GDPR); the Hub's account deletion must also remove
   WordNerd data.
 - Results: narrow client writes or callable.

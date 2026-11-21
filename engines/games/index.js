@@ -12,9 +12,9 @@ import * as drowning from './drowning.js';
 export const GAMES = { memory, matching, wordsearch, crossword, hangman, gapfill, drowning };
 export const GAME_IDS = Object.keys(GAMES);
 
-// The seed of one game in a session: the session seed plus the game's position, so two games of the
-// same type in one session differ, and every student gets the same puzzle for the same game.
-export const gameSeed = (sessionSeed, gameIndex) => `${sessionSeed}:${gameIndex}`;
+// The seed of one game in a room: the room seed plus the game's position, so two games of the same type in
+// one room differ, and every student gets the same puzzle for the same game.
+export const gameSeed = (roomSeed, gameIndex) => `${roomSeed}:${gameIndex}`;
 
 export function generateGame(type, list, settings, seed) {
   const g = GAMES[type];
