@@ -246,3 +246,10 @@ András did not like the old Tenor Sans + Source Sans; from four pairings shown 
 (headings) + Lexend (text). Luckiest Guy is used only for fixed English headings and the tab labels (capitals only,
 no ő/ű); list titles, words, the drowning prompt and other teacher/AI text use Lexend. The telephone-box sign uses
 Luckiest Guy. Checked in the browser: both fonts load, the computed families are right, no overflow.
+
+## Hub main (2026-11-21, approved by András)
+
+Hub `main` fast-forwarded to `dev` (`de98f10`) and pushed; Cloudflare Pages built it in about 20 s. Checked: the live
+`https://mrandrewshub.com/shared/sso.js` lists the WordNerd origin, the Hub home answers 200. One-click sign-in from
+the Hub is ready on the Hub side; it needs the WordNerd site at `wordnerd.mrandrewshub.com` (Pages, DNS, authorized
+domain – András) and a Hub product with `appUrl` (F6).
