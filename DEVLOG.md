@@ -253,3 +253,20 @@ Hub `main` fast-forwarded to `dev` (`de98f10`) and pushed; Cloudflare Pages buil
 `https://mrandrewshub.com/shared/sso.js` lists the WordNerd origin, the Hub home answers 200. One-click sign-in from
 the Hub is ready on the Hub side; it needs the WordNerd site at `wordnerd.mrandrewshub.com` (Pages, DNS, authorized
 domain – András) and a Hub product with `appUrl` (F6).
+
+## Site live (2026-11-21, done by Claude at András's request)
+
+- Firebase Auth authorized domains: `wordnerd.mrandrewshub.com` appended through the Identity Toolkit admin API
+  (gcloud token; read the list first, 14 → 15 domains, the others unchanged).
+- WordNerd `main` created from `dev` (`b77c7a4`).
+- Cloudflare Pages (in András's Chrome): project `wordnerd` from `mistagee83/wordnerd`, production branch `main`,
+  build `node scripts/build-web.mjs`, output `dist`, no framework. First build: Node 22.23, 48 files uploaded; the
+  repo's `functions/` folder was taken for Pages Functions, no routes found, skipped. Pages URL
+  `wordnerd-ecl.pages.dev` (the name `wordnerd` was taken). Custom domain `wordnerd.mrandrewshub.com` activated
+  (Cloudflare added the CNAME); the dashboard briefly showed "disconnected from your Git account", but the build
+  settings show the repo connected and automatic deployments enabled.
+- Checks: pages.dev 200; the custom domain answered 200 after about a minute, with `x-robots-tag: noindex`;
+  `/teacher`, `/engines/games/index.js`, `/js/teacher.js`, `/js/hub/sso.js` 200 (`/teacher.html` → 308 `/teacher`);
+  the live teacher page shows the sign-in panel without console errors and without the emulator button.
+- Not tried: a real sign-in and analysis on the live site (needs András's account); the Hub's "Open app" (needs a
+  Hub product with `appUrl`, F6).

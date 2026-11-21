@@ -286,7 +286,11 @@ Sessions and Results are placeholders until F4/F5. Locally the page uses the emu
 - No Netlify (decided 2026-11-21): testing happens on the live address, which is fine while the Hub does not list
   WordNerd (the Hub is not advertised before December 2026). The site is `noindex` until launch.
 - Static front end on Cloudflare Pages from `main` (build `node scripts/build-web.mjs`, output `dist`), like the Hub
-  and Hubbaloo (decided 2026-11-21). András creates the Pages project and the DNS record.
+  and Hubbaloo (decided 2026-11-21). Live since 2026-11-21: Pages project `wordnerd` (`wordnerd-ecl.pages.dev`),
+  custom domain `wordnerd.mrandrewshub.com` (CNAME created by Cloudflare), Firebase Auth authorized domain added.
+  Every push to `main` goes live. Pages treats the repo's `functions/` folder as Pages Functions; it finds no
+  routes and skips it (harmless; if it ever breaks a build, set the Pages root or rename nothing in Firebase).
+  Pages serves `/teacher.html` as `/teacher` (308 redirect).
 - The Hub's `shared/sso.js` lists `https://wordnerd.mrandrewshub.com` in `APP_ORIGINS` / `APP_NAMES` (Hub commit
   2026-11-21, live after the Hub's functions are deployed). Firebase Auth authorized domains: add
   `wordnerd.mrandrewshub.com` (András, console).
