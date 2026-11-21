@@ -159,6 +159,54 @@ assert.equal((await call(other.token, { id: listId }, 'wnDeleteList')).reason, '
 assert.deepEqual((await call(other.token, {}, 'wnListLists')).result.lists, []);
 assert.equal((await call(student.token, {}, 'wnListLists')).reason, 'teacher-only');
 ok('library: list, open, edit (a deleted word\'s gap becomes text), refusals; other teachers and students see nothing');
+// 12–15. rooms: open, join, play, see the results, close
+const games = ['memory', 'matching', 'wordsearch', 'crossword', 'hangman', 'gapfill', 'drowning'].map((type) => ({ type, settings: {} }));
+const made = await call(teacher.token, { listId, games, title: 'Year 9 – family' }, 'wnCreateRoom');
+assert.ok(made.result?.code?.length === 6, JSON.stringify(made));
+const { roomId, code } = made.result;
+assert.equal((await call(teacher.token, { listId, games: [{ type: 'chess' }] }, 'wnCreateRoom')).reason, 'unknown-game');
+assert.equal((await call(other.token, { listId, games }, 'wnCreateRoom')).reason, 'list');
+const kid1 = await signUp(true);
+const kid2 = await signUp(true);
+const j1 = await call(kid1.token, { code: code.toLowerCase(), nickname: ' Anna ' }, 'wnJoinRoom');
+assert.deepEqual(j1.result, { roomId, nickname: 'Anna', rejoined: false });
+assert.equal((await call(kid1.token, { code, nickname: 'Someone else' }, 'wnJoinRoom')).result.rejoined, true);
+assert.equal((await call(kid2.token, { code, nickname: 'anna' }, 'wnJoinRoom')).reason, 'nickname-taken');
+assert.equal((await call(kid2.token, { code: 'ZZZZZZ', nickname: 'Ben' }, 'wnJoinRoom')).reason, 'code');
+assert.equal((await call(kid2.token, { code, nickname: 'Ben' }, 'wnJoinRoom')).result.nickname, 'Ben');
+ok('rooms: a teacher opens a room with all seven games; students join with code and nickname (rejoin, taken name, wrong code)');
+
+const play = await call(kid1.token, { roomId }, 'wnPlayRoom');
+assert.equal(play.result.room.games.length, 7);
+assert.equal(play.result.room.listSnapshot.items.length, 20);
+assert.equal(play.result.me.nickname, 'Anna');
+assert.equal((await call(other.token, { roomId }, 'wnPlayRoom')).reason, 'player');
+const s1 = await call(kid1.token, { roomId, index: 0, result: { score: 8, max: 8, timeMs: 61000, moves: 20, misses: { w01: 2 } } }, 'wnSubmitResult');
+assert.equal(s1.result?.stars, 1, JSON.stringify(s1));
+const s2 = await call(kid1.token, { roomId, index: 0, result: { score: 8, max: 8, timeMs: 40000, moves: 9, misses: {} } }, 'wnSubmitResult');
+assert.deepEqual([s2.result.stars, s2.result.best.stars, s2.result.best.attempts, s2.result.path.stars], [3, 3, 2, 3]);
+assert.deepEqual(s2.result.best.firstMisses, { w01: 2 });
+assert.equal((await call(kid1.token, { roomId, index: 0, result: { score: 9, max: 8, timeMs: 1 } }, 'wnSubmitResult')).reason, 'score');
+ok('a student plays: results checked, stars computed, best try kept, first-try misses kept');
+
+const view = await call(teacher.token, { roomId }, 'wnGetRoom');
+assert.equal(view.result.room.code, code);
+assert.equal(view.result.room.seed, undefined);
+assert.deepEqual(view.result.players.map((p) => [p.nickname, p.path.stars]), [['Anna', 3], ['Ben', 0]]);
+assert.equal((await call(other.token, { roomId }, 'wnGetRoom')).reason, 'room');
+const myRooms = await call(teacher.token, {}, 'wnListRooms');
+assert.ok(myRooms.result.rooms.some((r) => r.id === roomId && r.players === 2 && r.status === 'open'));
+ok('the teacher sees the room, its code and every student\'s stars; others see nothing');
+
+assert.deepEqual((await call(teacher.token, { roomId }, 'wnCloseRoom')).result, { ok: true });
+assert.equal((await call(kid2.token, { roomId, index: 1, result: { score: 1, max: 6, timeMs: 5 } }, 'wnSubmitResult')).reason, 'room-closed');
+const kid3 = await signUp(true);
+assert.equal((await call(kid3.token, { code, nickname: 'Cara' }, 'wnJoinRoom')).reason, 'room-closed');
+assert.equal((await call(teacher.token, { roomId }, 'wnGetRoom')).reason, 'hub-pass');
+await setDoc(`users/${teacher.uid}`, { email: 'teacher@example.com', entitlements: { all: { status: 'active', source: 'admin', tier: 'hub' } }, credits: { purchased: 10, purchasedExpiresAt: future } });
+assert.equal((await call(teacher.token, { roomId }, 'wnGetRoom')).result.room.status, 'closed');
+ok('closing: no more results or joins; the closed room (History) opens only with the Hub pass');
+
 assert.deepEqual((await call(teacher.token, { id: listId }, 'wnDeleteList')).result, { ok: true });
 assert.equal(await getDoc(`wnLists/${listId}`), null);
 ok('delete removes the list');

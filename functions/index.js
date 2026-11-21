@@ -6,6 +6,7 @@ import { defineSecret } from 'firebase-functions/params';
 import { REGION } from './config.js';
 import { analyze } from './analyze.js';
 import * as lists from './lists.js';
+import * as rooms from './rooms.js';
 
 setGlobalOptions({ region: REGION, maxInstances: 10 });
 
@@ -22,6 +23,15 @@ export const wnListLists = onCall(lists.listLists);
 export const wnGetList = onCall(lists.getList);
 export const wnSaveList = onCall(lists.saveList);
 export const wnDeleteList = onCall(lists.deleteList);
+
+// Rooms (F4)
+export const wnCreateRoom = onCall(rooms.createRoom);
+export const wnListRooms = onCall(rooms.listRooms);
+export const wnGetRoom = onCall(rooms.getRoom);
+export const wnCloseRoom = onCall(rooms.closeRoom);
+export const wnJoinRoom = onCall(rooms.joinRoom);
+export const wnPlayRoom = onCall(rooms.playRoom);
+export const wnSubmitResult = onCall(rooms.submitResult);
 
 // Emulator only: credits and a price for local end-to-end trials. Not part of a production deploy.
 export const wnDevSeed = process.env.FUNCTIONS_EMULATOR === 'true' ? onCall(lists.devSeed) : undefined;
