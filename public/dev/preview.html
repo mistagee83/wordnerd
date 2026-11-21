@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WordNerd game preview</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&family=Tenor+Sans&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/dev/preview.css">
+</head>
+<body>
+  <header class="wrap top">
+    <img src="/img/brand/WordNerd_logo.png" alt="WordNerd" width="2000" height="400" class="logo">
+    <p class="muted">Developer preview of the game engines (F1). Sample list: <span id="list-title"></span>.</p>
+  </header>
+  <main class="wrap">
+    <nav id="tabs" class="tabs" aria-label="Games"></nav>
+    <section class="panel controls">
+      <form id="settings" class="settings"></form>
+      <div class="seed">
+        <label>Seed <input id="seed" type="text" value="demo:0" spellcheck="false"></label>
+        <button type="button" class="btn" id="new-seed">New seed</button>
+      </div>
+    </section>
+    <section id="game" class="panel game" aria-live="polite"></section>
+    <details class="panel">
+      <summary>Puzzle JSON</summary>
+      <pre id="json"></pre>
+    </details>
+  </main>
+  <script type="module" src="/dev/preview.js"></script>
+</body>
+</html>

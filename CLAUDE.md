@@ -83,6 +83,8 @@ games from it deterministically, shared with students through a code. One app un
 ## Commands
 
 - Static dev server: `npm run serve` (http://localhost:5174; serves `public/` and `/engines/`)
+- Game preview (all seven games, sample list, settings and seed): http://localhost:5174/dev/preview.html
+- Sample list in the analysis shape: `engines/fixtures/sample-family-b1.js` (tests and preview)
 - Unit tests: `npm test` (`node:test`, no dependencies)
 - Hub shared modules: `npm run sync:hub` copies the Hub's `shared/entitlements.js`, `credits.js` into
   `engines/hub/` and `sso.js` into `public/js/hub/` (`--check` only reports); never edit the copies.

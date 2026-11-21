@@ -64,8 +64,8 @@ Per item (`term` may be a multi-word expression):
 | `definition` (target language, simple) | monolingual matching, crossword clues | to take care of someone |
 | `translation` (support language) | bilingual games | gondoskodik valakiről |
 | `sourceSentence` | context | *She looked after her little brother.* |
-| `example` (new sentence, gap marked) | gapfill | *Who will ___ the dog while we're away?* |
-| `distractors[3]` | gapfill options, later quiz | take after, look for, look into |
+| `example` = `{ text, answer }` (new sentence with exactly one `___` gap, and the exact form that fills it) | gapfill | `{ text: "Who will ___ the dog while we're away?", answer: "look after" }` |
+| `distractors[3]` (same form as `example.answer`) | gapfill options, later quiz | take after, look for, look into |
 | `family` | later: word formation | care, careful, careless |
 | `synonyms`, `antonyms` | later: matching variants, odd one out | take care of |
 | `category` (group inside the list) | later: assigning, odd one out | family / people |
@@ -98,6 +98,24 @@ assigning, word formation.
 Generators are pure ES modules in `engines/games/`, use only `engines/prng.js` for randomness, and are covered by
 `node:test` tests: same seed → same puzzle; every word placed or explicitly reported as skipped; the crossword is
 connected; output works for multi-word terms and non-ASCII letters.
+
+Engine contract (built in F1): each game module exports `meta`, `defaults`, `limits`, `normalizeSettings()` and
+`generate(list, settings, seed)`, which returns `{ ok: true, game, settings, … }` or `{ ok: false, reason }` and
+never throws. Settings are clamped to `limits`; unknown values fall back to the defaults. The seed of one game in a
+session is `gameSeed(sessionSeed, gameIndex)`. Rules settled in F1:
+
+- Letter games use `engines/lang.js`: graphemes (an accented letter is one letter), locale upper case (a letter
+  whose upper case is longer, like German ß, stays as it is), grid letters without spaces/hyphens/apostrophes,
+  per-language filler alphabets and hangman keyboards (en, hu, de, es, fr, it; other languages fall back to Latin
+  plus the list's own letters). Typed answers ignore case, extra spaces and typographic apostrophes; accents count.
+- Word search: automatic grid size (8–16) unless the teacher fixes it; with a fixed size, words longer than the grid
+  are left out. Every position is tried in seeded order, so a word is skipped only if it truly cannot fit.
+- Crossword: the hidden word is 0–3 letters longer than the asked length; rows are assigned rarest letter first.
+  If no layout exists the game reports it instead of producing a broken puzzle.
+- Gapfill: an item without exactly one gap, or (in options mode) without three distinct distractors, is skipped.
+- Drowning: water fills in 60 / 40 / 25 seconds (slow / normal / fast); a correct answer drains 20 / 15 / 12 %.
+
+Local preview of all seven games with the sample list: `npm run serve`, then `/dev/preview.html`.
 
 ## 7. Access and credits
 
