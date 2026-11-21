@@ -289,7 +289,7 @@ Sessions and Results are placeholders until F4/F5. Locally the page uses the emu
   and Hubbaloo (decided 2026-11-21). Live since 2026-11-21: Pages project `wordnerd` (`wordnerd-ecl.pages.dev`),
   custom domain `wordnerd.mrandrewshub.com` (CNAME created by Cloudflare), Firebase Auth authorized domain added.
   Every push to `main` goes live. Pages treats the repo's `functions/` folder as Pages Functions; it finds no
-  routes and skips it (harmless; if it ever breaks a build, set the Pages root or rename nothing in Firebase).
+  routes and skips it (harmless; if it ever breaks a build, set a Pages root directory that has no functions/ folder).
   Pages serves `/teacher.html` as `/teacher` (308 redirect).
 - The Hub's `shared/sso.js` lists `https://wordnerd.mrandrewshub.com` in `APP_ORIGINS` / `APP_NAMES` (Hub commit
   2026-11-21, live after the Hub's functions are deployed). Firebase Auth authorized domains: add
