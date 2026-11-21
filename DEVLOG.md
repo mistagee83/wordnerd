@@ -218,3 +218,15 @@ of `wordnerd/analyze` in the Hub admin. Secret Manager still has no `WN_GEMINI_A
   deploy, Hub functions deploy for one-click sign-in (with approval).
 - Google sign-in and the Hub's one-click link were not tried (they need the real project and domain).
 - A real phone.
+
+## Backend live (2026-11-21, approved by András)
+
+- Secret Manager: `WN_GEMINI_API_KEY` version 1, uploaded from `functions/.secret.local` through a temporary file
+  that was deleted right after (the key was never printed). The deploy granted the compute service account
+  `secretAccessor` on it.
+- `firebase deploy --only functions:wordnerd`: `wnAnalyze`, `wnListLists`, `wnGetList`, `wnSaveList`,
+  `wnDeleteList` created (Node 22, 2nd gen, europe-west1). `wnDevSeed` is not deployed (emulator only; 404 live).
+- Check: each live function refuses an unauthenticated call with `sign-in`.
+- Not done: a signed-in live analysis (needs a real teacher account: `http://localhost:5174/teacher.html?live`
+  works before the domain exists, localhost is an authorized domain by default); Hub push + Hub functions deploy
+  for one-click sign-in; Cloudflare Pages, DNS, authorized domain; `dev` → `main`.
