@@ -47,7 +47,7 @@ const REASON_TEXT = {
   'file-too-large': 'The file is larger than 4 MB.',
   'support-language': 'Choose the translation language.',
   level: 'Choose the level.',
-  count: 'Choose between 10 and 30 words.',
+  count: 'Choose Auto or between 10 and 30 words.',
   kind: 'Paste a text or choose a file.',
   'teacher-only': 'Please sign in with your teacher account.',
   'sign-in': 'Please sign in again.',
@@ -323,7 +323,7 @@ function newForm() {
     const nav = (navigator.language || '').slice(0, 2);
     lang = SUPPORT_LANGS[nav] && nav !== 'en' ? nav : '';
   }
-  return { kind: 'text', text: '', file: null, fileError: '', title: '', level: 'B1', supportLang: lang, count: 20, focus: '' };
+  return { kind: 'text', text: '', file: null, fileError: '', title: '', level: 'B1', supportLang: lang, count: 'auto', focus: '' };
 }
 
 function readFile(file) {
@@ -370,7 +370,7 @@ function newListView() {
     : [h('strong', {}, 'Choose a file'), h('span', { class: 'muted' }, ' or drop it here · PDF or photo of a page · at most 4 MB')]);
 
   const select = (name, options, value, placeholder) => h('select', { name, onchange: (e) => {
-    F[name] = name === 'count' ? Number(e.target.value) : e.target.value;
+    F[name] = name === 'count' && e.target.value !== 'auto' ? Number(e.target.value) : e.target.value;
     if (name === 'supportLang') { try { localStorage.setItem('wn.supportLang', F.supportLang); } catch { /* ignore */ } }
   } },
   placeholder ? h('option', { value: '', selected: !value, disabled: true }, placeholder) : null,
@@ -419,7 +419,7 @@ function newListView() {
       h('div', { class: 'row' },
         h('label', { class: 'field' }, 'Level', select('level', LEVELS.map((l) => [l, l]), F.level)),
         h('label', { class: 'field' }, 'Translation language', select('supportLang', langs, F.supportLang, 'Choose…')),
-        h('label', { class: 'field' }, 'Number of words', select('count', [10, 12, 15, 20, 25, 30].map((n) => [n, n]), F.count))),
+        h('label', { class: 'field' }, 'Number of words', select('count', [['auto', 'Auto (all useful words, up to 40)'], ...[10, 12, 15, 20, 25, 30].map((n) => [n, n])], F.count))),
       h('label', { class: 'field' }, 'Title (optional)', h('input', { type: 'text', maxlength: INPUT_LIMITS.titleChars, value: F.title, oninput: (e) => { F.title = e.target.value; } })),
       h('label', { class: 'field' }, 'Focus on… (optional)', h('input', { type: 'text', maxlength: INPUT_LIMITS.focusChars, placeholder: 'e.g. phrasal verbs, adjectives for feelings', value: F.focus, oninput: (e) => { F.focus = e.target.value; } })),
       costLine,
@@ -437,7 +437,7 @@ function openProgress() {
   let i = 0;
   waitTimer = setInterval(() => { i = Math.min(i + 1, WAIT_LINES.length - 1); line.textContent = WAIT_LINES[i]; }, 5000);
   $overlay = h('div', { class: 'overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Making your word list' },
-    h('div', { class: 'wait' }, h('img', { src: LOGO, alt: '', class: 'wait-logo' }), line, h('p', { class: 'muted' }, 'This takes about half a minute.')));
+    h('div', { class: 'wait' }, h('img', { src: LOGO, alt: '', class: 'wait-logo' }), line, h('p', { class: 'muted' }, 'This takes about half a minute – up to a minute for a long list.')));
   document.body.append($overlay);
 }
 function closeOverlay() {

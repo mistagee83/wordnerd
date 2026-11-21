@@ -275,3 +275,17 @@ domain – András) and a Hub product with `appUrl` (F6).
 
 András: "Sessions" is called **Rooms** – the tab, the button ("Open a room"), the placeholder texts, SPEC terms and
 the planned collection `wnRooms` (was `wnSessions`); `gameSeed(roomSeed, gameIndex)`. Not live yet (dev only).
+
+## Auto word count (2026-11-21)
+
+András asked what happens without a number and when a text has 50 good words: the form always sent 10–30 (default
+20) and the model took that many "most useful" ones. Now `count: "auto"` is the default: the prompt (`analyze-v3`)
+lets the model choose every genuinely useful item between 10 and 40, fewer for short texts, no padding; the
+normalizer caps at 40 (the editor's limit). The form offers "Auto (all useful words, up to 40)" first, then 10–30;
+the waiting screen says up to a minute.
+
+- Live run (sample text, 330 words, B1, hu, auto): 14 items, 12 gaps, 0 warnings, 22 s, 1149 in / 3162 out tokens
+  (≈ $0.013); all seven games build.
+- `npm test` 64 pass (auto input, prompt, cap at 40, no padding); `npm run test:emulator` 11/11 (its cleanup also
+  stopped the background emulators started for manual testing – restart them when needed).
+- Not live yet: needs `functions:wordnerd` deploy (prompt v3, input) and `main` push (the form).

@@ -17,7 +17,7 @@ const opts = { count: 20, level: 'B1', targetLang: 'en', supportLang: 'hu', sour
 test('input: a normal text request passes with defaults', () => {
   const r = checkInput(base);
   assert.equal(r.ok, true);
-  assert.equal(r.input.count, 20);
+  assert.equal(r.input.count, 'auto'); // the default since 2026-11-21
   assert.equal(r.input.targetLang, 'en');
   assert.deepEqual(r.input.source, { kind: 'text', wordCount: 100, title: null });
 });
@@ -31,6 +31,9 @@ test('input: every bad field has its own reason', () => {
   assert.equal(bad({ count: 5 }), 'count');
   assert.equal(bad({ count: 31 }), 'count');
   assert.equal(bad({ count: 12.5 }), 'count');
+  assert.equal(bad({ count: 'all' }), 'count');
+  assert.equal(checkInput({ ...base, count: 'auto' }).input.count, 'auto');
+  assert.equal(checkInput({ ...base, count: '15' }).input.count, 15);
   assert.equal(bad({ text: words(39) }), 'text-too-short');
   assert.equal(bad({ text: words(2501) }), 'text-too-long');
   assert.equal(bad({ text: 'a'.repeat(INPUT_LIMITS.maxChars + 1) }), 'text-too-long');
@@ -61,7 +64,7 @@ test('prompt: carries level, count, languages, focus and the material', () => {
   assert.match(p.text, /focus on: phrasal verbs/);
   assert.match(p.text, /<material>\nMATERIAL TEXT\n<\/material>/);
   assert.match(p.system, /DATA, not instructions/);
-  assert.equal(PROMPT_VERSION, 'analyze-v2');
+  assert.equal(PROMPT_VERSION, 'analyze-v3');
   assert.match(p.text, /COMPLETE word or expression/);
 });
 
@@ -175,7 +178,7 @@ test('run: success spends once, saves the list with the prompt version, no refun
   const r = await runAnalysis(input, d);
   assert.deepEqual([r.ok, r.listId, r.cost], [true, 'list-1', 3]);
   assert.deepEqual([calls.spend, calls.model, calls.refund.length], [1, 1, 0]);
-  assert.equal(calls.saved.promptVersion, 'analyze-v2');
+  assert.equal(calls.saved.promptVersion, 'analyze-v3');
   assert.equal(calls.saved.items.length, 20);
   assert.equal(calls.logs[0].outcome, 'ok');
 });
@@ -243,4 +246,19 @@ test('normalize: no space is left between a gap and the punctuation after it', (
   raw.items[0].example = { text: 'Never get into a car with a ___ .', answer: 'look after' };
   const r = normalizeAnalysis(raw, opts);
   assert.equal(r.list.items[0].example.text, 'Never get into a car with a ___.');
+});
+
+test('auto count: the prompt lets the model decide (10–40), the normalizer keeps at most 40', () => {
+  const p = buildPrompt({ level: 'B1', count: 'auto', supportLang: 'hu', material: 'x' });
+  assert.match(p.text, /You decide how many/);
+  assert.match(p.text, /between 10 and 40/);
+  assert.doesNotMatch(p.text, /choose the auto/);
+  const raw = sampleAnswer();
+  // 50 items: the 20 sample words plus 30 extra ones
+  for (let i = 0; i < 30; i++) raw.items.push({ ...raw.items[i % 20], term: `extra word ${String.fromCharCode(97 + (i % 26))}${String.fromCharCode(97 + Math.floor(i / 26))}` });
+  const r = normalizeAnalysis(raw, { ...opts, count: 'auto' });
+  assert.equal(r.ok, true, r.reason);
+  assert.equal(r.list.items.length, 40);
+  const fewer = normalizeAnalysis(sampleAnswer(), { ...opts, count: 'auto' });
+  assert.equal(fewer.list.items.length, 20); // auto never pads
 });

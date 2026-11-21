@@ -34,7 +34,7 @@ if (!apiKey) { console.error('No key: set WN_GEMINI_API_KEY or put it in functio
 
 const ext = extname(file).toLowerCase();
 const MIME = { '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
-const base = { level: flag('level', 'B1'), supportLang: flag('lang', 'hu'), count: Number(flag('count', 20)) };
+const base = { level: flag('level', 'B1'), supportLang: flag('lang', 'hu'), count: flag('count', 'auto') === 'auto' ? 'auto' : Number(flag('count', 'auto')) };
 const data = MIME[ext]
   ? { ...base, kind: 'file', file: { mimeType: MIME[ext], data: readFileSync(file).toString('base64'), name: basename(file) } }
   : { ...base, kind: 'text', text: readFileSync(file, 'utf8') };

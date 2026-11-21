@@ -7,7 +7,8 @@ export const INPUT_LIMITS = Object.freeze({
   maxWords: 2500, // a reading or a lesson, not a book (SPEC 4)
   maxChars: 20000,
   maxFileBytes: 4 * 1024 * 1024, // a callable request carries at most ~10 MB; base64 adds a third
-  count: { min: 10, max: 30, def: 20 },
+  // a number, or 'auto': the model decides how many words are really useful, up to autoMax (decided 2026-11-21)
+  count: { min: 10, max: 30, def: 'auto', autoMax: 40 },
   focusChars: 120,
   titleChars: 80,
 });
@@ -28,8 +29,9 @@ export function checkInput(data = {}) {
   if (!TARGET_LANGS[targetLang]) return { ok: false, reason: 'target-language' };
   if (!SUPPORT_LANGS[data.supportLang]) return { ok: false, reason: 'support-language' };
   if (!LEVELS.includes(data.level)) return { ok: false, reason: 'level' };
-  const c = Number(data.count ?? INPUT_LIMITS.count.def);
-  if (!Number.isInteger(c) || c < INPUT_LIMITS.count.min || c > INPUT_LIMITS.count.max) return { ok: false, reason: 'count' };
+  const raw = data.count ?? INPUT_LIMITS.count.def;
+  const c = raw === 'auto' ? 'auto' : Number(raw);
+  if (c !== 'auto' && (!Number.isInteger(c) || c < INPUT_LIMITS.count.min || c > INPUT_LIMITS.count.max)) return { ok: false, reason: 'count' };
   const focus = typeof data.focus === 'string' ? data.focus.trim().slice(0, INPUT_LIMITS.focusChars) : '';
   const title = typeof data.title === 'string' ? data.title.trim().slice(0, INPUT_LIMITS.titleChars) : '';
   const base = { targetLang, supportLang: data.supportLang, level: data.level, count: c, focus, title };

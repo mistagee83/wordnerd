@@ -217,7 +217,8 @@ Flow (`functions/analyze.js`, logic in the pure `engines/analysis/`, so it is te
 2. Input check (`engines/analysis/input.js`, the same rules run in the browser in F3), before any credit is spent:
    `kind` `text` (40–2500 words, at most 20 000 characters) or `file` (PDF, PNG, JPEG or WebP, base64 in the
    request, at most 4 MB before encoding); `level` A1–C1; `supportLang` from `engines/analysis/languages.js`
-   (30 languages); `count` 10–30 (default 20); optional `focus` (120 chars) and `title` (80 chars).
+   (30 languages); `count` `"auto"` (default since 2026-11-21: the model takes every genuinely useful item, 10–40,
+   fewer for a short text, never padded) or a number 10–30; optional `focus` (120 chars) and `title` (80 chars).
    Target language: English only for now.
 3. Credits: `wordnerd/analyze` spent in a transaction (the Hub's pattern) → `insufficient` (with balance and cost)
    or `no-price` (no price in `settings/credits`: never a free call).

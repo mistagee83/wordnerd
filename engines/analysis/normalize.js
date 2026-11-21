@@ -5,6 +5,7 @@
 // then gives the credits back). Pure module: no I/O.
 import { parseCloze } from '../games/gapfill.js';
 import { gridLetters } from '../lang.js';
+import { AUTO_MAX } from './prompt.js';
 
 export const MIN_ITEMS = 8;
 export const MIN_GAPS = 4;
@@ -71,7 +72,7 @@ export function normalizeAnalysis(raw, opts) {
       antonyms: words(it.antonyms, MAX.term, 3),
       category: clean(it.category, MAX.label),
     });
-    if (items.length === opts.count) break;
+    if (items.length === (opts.count === 'auto' ? AUTO_MAX : opts.count)) break;
   }
   if (items.length < MIN_ITEMS) return { ok: false, reason: 'too_few_items', retry: true, warnings };
   items.forEach((it, i) => { it.id = `w${String(i + 1).padStart(2, '0')}`; });
