@@ -194,3 +194,33 @@ body.teacher { background: var(--board); background-attachment: fixed; }
 .set-field { display: grid; gap: 4px; font-size: .88rem; color: var(--c-text-muted); }
 .set-field input, .set-field select { font: inherit; padding: 6px 10px; border-radius: var(--wn-radius-sm); border: 1px solid var(--c-wood-line); background: var(--c-field); color: var(--c-field-text); }
 .set-field input[type="number"] { width: 90px; }
+
+/* ---------- rooms (F4) ---------- */
+.section-title { margin: 26px 0 10px; font-size: 1.2rem; }
+.rs { width: min(720px, 100%); }
+.rs-list { list-style: none; margin: 6px 0 14px; padding: 0; display: grid; gap: 8px; }
+.rs-game { padding: 10px 12px; border-radius: var(--wn-radius-sm); background: rgb(0 0 0 / .18); border: 1px solid var(--wn-wood-line); }
+.rs-game.is-off { opacity: .55; }
+.rs-pick { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; cursor: pointer; color: var(--wn-amber-500); }
+.rs-pick input { width: 20px; height: 20px; grid-row: span 2; accent-color: var(--wn-orange-500); }
+.rs-pick .game-blurb { grid-column: 2; }
+.rs-settings { margin: 6px 0 0 30px; }
+.rs-settings summary { cursor: pointer; color: var(--c-text-muted); font-size: .88rem; }
+.rs-actions { display: flex; justify-content: flex-end; gap: 10px; margin: 0; }
+.join {
+  display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center; margin: 14px 0 6px; padding: 18px 20px;
+  border-radius: var(--wn-radius-md); background: var(--c-field); color: var(--c-field-text); box-shadow: 0 5px 0 var(--wn-wood-700);
+}
+.join-text p { margin: 0; }
+.join-label { color: #7a6a52; font-size: .9rem; }
+.join-url { font-weight: 600; font-size: 1.15rem; margin-bottom: 8px !important; overflow-wrap: anywhere; }
+.join-code { font: clamp(2.4rem, 8vw, 3.6rem)/1.1 var(--wn-font-display); color: var(--wn-wood-700); letter-spacing: .08em; margin-bottom: 10px !important; }
+.qr { width: clamp(140px, 26vw, 220px); aspect-ratio: 1; background: #fff; border-radius: 8px; padding: 6px; display: grid; place-items: center; color: #555; font-size: .8rem; }
+.qr svg { width: 100%; height: 100%; display: block; }
+@media (max-width: 560px) { .join { grid-template-columns: 1fr; justify-items: center; text-align: center; } }
+.tbl-wrap { overflow-x: auto; border-radius: var(--wn-radius-sm); border: 1px solid var(--wn-wood-line); }
+.players { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.players th, .players td { padding: 8px 10px; text-align: center; border-bottom: 1px solid rgb(181 123 94 / .35); white-space: nowrap; }
+.players thead th { color: var(--c-accent); font-weight: 500; font-size: .82rem; background: rgb(0 0 0 / .2); }
+.players tbody th { text-align: left; color: #fff3d6; font-weight: 600; }
+.players .num { font-weight: 600; color: var(--wn-amber-500); }

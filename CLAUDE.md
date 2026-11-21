@@ -89,6 +89,8 @@ games from it deterministically, shared with students through a code. One app un
   `npm run sync:engines`; the mock model answers), `npm run serve`, open http://localhost:5174/teacher.html and use
   "Emulator: sign in as the test teacher" (50 credits via `wnDevSeed`). `?live` makes a local page use the real
   project instead of the emulators.
+- Student page locally: http://localhost:5174/play (or `/play?code=XXXXXX`); open a room from a list on the teacher
+  page first. The local server serves `/play` and `/teacher` like Cloudflare Pages (no `.html`).
 - Game preview (all seven games, sample list, settings and seed): http://localhost:5174/dev/preview.html
 - Sample list in the analysis shape: `engines/fixtures/sample-family-b1.js` (tests and preview)
 - Unit tests: `npm test` (`node:test`, no dependencies)

@@ -8,7 +8,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
 import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js';
 import { firebase, USE_EMULATORS } from './firebase.js';
-import { HUB_ACCOUNT_URL } from './config.js';
+import { HUB_ACCOUNT_URL, publicBaseUrl } from './config.js';
 import { ONE_ACCOUNT_TEXT, authErrorText, isEmail, hubAccountUrl, redeemSso, takeSsoCode } from './hub/sso.js';
 import { h, s } from './games/ui.js';
 import { settingsForm } from './games/settings.js';
@@ -17,6 +17,8 @@ import { checkInput, INPUT_LIMITS, FILE_TYPES } from '/engines/analysis/input.js
 import { LEVELS, SUPPORT_LANGS } from '/engines/analysis/languages.js';
 import { applyEdits, EDIT_LIMITS } from '/engines/lists/edit.js';
 import { GAMES, GAME_IDS, generateGame } from '/engines/games/index.js';
+import { ROOM_LIMITS } from '/engines/rooms/rooms.js';
+import { starRow } from './stars.js';
 import * as memory from './games/memory.js';
 import * as matching from './games/matching.js';
 import * as wordsearch from './games/wordsearch.js';
@@ -59,6 +61,14 @@ const REASON_TEXT = {
   'too-few-words': `A list needs at least ${EDIT_LIMITS.minItems} words.`,
   'too-many-words': `A list can have at most ${EDIT_LIMITS.maxItems} words.`,
   'unknown-word': 'The list changed meanwhile. Please reload the page.',
+  'no-games': 'Choose at least one game.',
+  'too-many-games': 'A room can have at most seven games.',
+  'duplicate-game': 'Each game can be in a room once.',
+  'unknown-game': 'Unknown game. Please reload the page.',
+  'game-unavailable': 'One of the games cannot be built from this list.',
+  room: 'This room does not exist any more.',
+  'hub-pass': 'Closed rooms and their results are your History: they come with the Hub pass.',
+  'no-code': 'No free room code right now. Please try again.',
 };
 const reasonText = (err) => REASON_TEXT[err?.reason] ?? 'Something went wrong. Please try again.';
 
@@ -91,6 +101,11 @@ const S = {
   analyzing: false,
 };
 const SI = { email: '', busy: false };
+// rooms (F4)
+let roomTimer = null;
+S.rooms = null;
+S.room = null; // { room, players }
+S.hubPass = false;
 
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const langName = (code) => SUPPORT_LANGS[code] ?? code;
@@ -166,10 +181,19 @@ async function route() {
   }
   // a note set just before navigating ("Your list is ready.") survives this one route change
   S.error = ''; S.note = S.flash ?? ''; S.flash = null; S.rowError = null;
-  S.view = ['lists', 'new', 'list', 'rooms', 'results'].includes(view) ? view : 'lists';
+  S.view = ['lists', 'new', 'list', 'rooms', 'room', 'results'].includes(view) ? view : 'lists';
+  clearInterval(roomTimer);
+  if (S.view !== 'room') S.room = null;
   render();
   try {
     if (S.view === 'lists') { S.lists = (await fb.call('wnListLists', {})).lists; }
+    if (S.view === 'rooms') { const r = await fb.call('wnListRooms', {}); S.rooms = r.rooms; S.hubPass = r.hubPass; }
+    if (S.view === 'room' && id) {
+      if (S.room?.room.id !== id) { S.room = null; render(); }
+      S.room = await fb.call('wnGetRoom', { roomId: id });
+      // the player table refreshes itself while the room is open (the live monitor comes in F5)
+      if (S.room.room.status === 'open') roomTimer = setInterval(refreshRoom, 10000);
+    }
     if (S.view === 'list' && id) {
       if (S.list?.id !== id) { S.list = null; render(); S.list = (await fb.call('wnGetList', { id })).list; }
       S.draft = draftOf(S.list);
@@ -247,7 +271,7 @@ const icon = (name) => s('svg', { viewBox: '0 0 24 24', class: 'icon', 'aria-hid
   s('path', { d: ICONS[name], fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
 
 function tab(view, label, hash = view) {
-  const active = S.view === view || (view === 'lists' && S.view === 'list');
+  const active = S.view === view || (view === 'lists' && S.view === 'list') || (view === 'rooms' && S.view === 'room');
   return h('a', { href: `#${hash}`, class: `tab${active ? ' is-active' : ''}`, 'aria-current': active ? 'page' : null }, icon(view), h('span', {}, label));
 }
 
@@ -285,7 +309,8 @@ function panelContent() {
   switch (S.view) {
     case 'new': return newListView();
     case 'list': return listView();
-    case 'rooms': return comingSoon('Rooms', 'Open a room with a set of games from a list, and your class joins with a code. Coming in the next update.');
+    case 'rooms': return roomsView();
+    case 'room': return roomView();
     case 'results': return comingSoon('Results', 'See what each student completed, and which words were the hardest. The history of past rooms comes with the Hub pass.');
     default: return listsView();
   }
@@ -538,8 +563,8 @@ function listView() {
         h('span', { class: 'game-name' }, GAMES[id].meta.title),
         h('span', { class: 'game-blurb' }, test.ok ? GAME_BLURB[id] : `Not available: ${test.reason}`)));
     })),
-    h('button', { type: 'button', class: 'btn btn-primary btn-wide', disabled: true, title: 'Coming in the next update' }, 'Open a room'),
-    h('p', { class: 'muted small' }, 'Sharing the games with your class through a code comes in the next update.'));
+    h('button', { type: 'button', class: 'btn btn-primary btn-wide', onclick: () => { if (S.dirty) { S.error = 'Save or discard your changes first.'; renderPanel(); return; } openRoomSetup(); } }, 'Open a room'),
+    h('p', { class: 'muted small' }, 'Your class joins with a code: no accounts, just a nickname.'));
 
   return [
     h('div', { class: 'panel-head' },
@@ -583,6 +608,153 @@ function openPreview(gameId) {
   document.body.append($overlay);
   document.addEventListener('keydown', escClose);
   mount();
+}
+
+// ---------------------------------------------------------------------------------------------------
+// rooms (F4): open a room from a list, the room view with code and QR, the Rooms tab
+
+async function refreshRoom() {
+  if (S.view !== 'room' || !S.room) { clearInterval(roomTimer); return; }
+  try {
+    S.room = await fb.call('wnGetRoom', { roomId: S.room.room.id });
+    if (S.room.room.status !== 'open') clearInterval(roomTimer);
+    renderPanel();
+  } catch { /* a missed refresh is fine; the next one tries again */ }
+}
+
+// the room set-up: which games, their settings, a title; every available game is on by default
+function openRoomSetup() {
+  closeOverlay();
+  const L = S.list;
+  const picks = GAME_IDS.map((type) => {
+    const test = generateGame(type, L, {}, 'check');
+    return { type, on: test.ok, ok: test.ok, reason: test.reason, settings: { ...GAMES[type].defaults } };
+  });
+  const title = h('input', { type: 'text', value: L.title, maxlength: ROOM_LIMITS.titleChars, 'aria-label': 'Room title' });
+  const err = h('p', { class: 'msg msg-error', hidden: true, role: 'alert' });
+  const rows = picks.map((p) => {
+    const box = h('input', { type: 'checkbox', checked: p.on, disabled: !p.ok, onchange: (e) => { p.on = e.target.checked; } });
+    return h('li', { class: `rs-game${p.ok ? '' : ' is-off'}` },
+      h('label', { class: 'rs-pick' }, box, h('span', { class: 'game-name' }, GAMES[p.type].meta.title),
+        h('span', { class: 'game-blurb' }, p.ok ? GAME_BLURB[p.type] : `Not available: ${p.reason}`)),
+      p.ok ? h('details', { class: 'rs-settings' }, h('summary', {}, 'Settings'), settingsForm(p.type, p.settings, (st) => { p.settings = st; })) : null);
+  });
+  const create = h('button', { type: 'button', class: 'btn btn-primary', onclick: async () => {
+    const games = picks.filter((p) => p.on).map((p) => ({ type: p.type, settings: p.settings }));
+    if (!games.length) { err.textContent = REASON_TEXT['no-games']; err.hidden = false; return; }
+    create.disabled = true; create.textContent = 'Opening…'; err.hidden = true;
+    try {
+      const res = await fb.call('wnCreateRoom', { listId: L.id, games, title: title.value });
+      closeOverlay();
+      S.rooms = null;
+      location.hash = `room/${res.roomId}`;
+    } catch (e) {
+      err.textContent = reasonText(e); err.hidden = false;
+      create.disabled = false; create.textContent = 'Open the room';
+    }
+  } }, 'Open the room');
+  $overlay = h('div', { class: 'overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Open a room', onclick: (e) => { if (e.target === $overlay) closeOverlay(); } },
+    h('div', { class: 'pv rs' },
+      h('div', { class: 'pv-head' }, h('h3', {}, 'Open a room'), h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Close', onclick: closeOverlay }, '×')),
+      h('p', { class: 'muted small' }, `Students play the chosen games in this order and collect up to 3 stars in each. The room stays open until you close it, at most ${ROOM_LIMITS.maxDays} days.`),
+      h('label', { class: 'field' }, 'Room title', title),
+      h('ul', { class: 'rs-list' }, rows),
+      err,
+      h('p', { class: 'rs-actions' }, h('button', { type: 'button', class: 'btn btn-ghost', onclick: closeOverlay }, 'Cancel'), create)));
+  document.body.append($overlay);
+  document.addEventListener('keydown', escClose);
+}
+
+const joinUrl = (code) => `${publicBaseUrl()}/play?code=${code}`;
+const fmtCode = (code) => `${code.slice(0, 3)} ${code.slice(3)}`;
+const fmtDateTime = (ms) => (ms ? new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+
+// QR codes: qrcode-generator from jsDelivr (the Hubbaloo choice), loaded only when a room is shown
+let qrLib = null;
+function loadQr() {
+  if (window.qrcode) return Promise.resolve(window.qrcode);
+  qrLib ??= new Promise((resolve, reject) => {
+    const tag = document.createElement('script');
+    tag.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+    tag.onload = () => resolve(window.qrcode);
+    tag.onerror = () => { qrLib = null; reject(new Error('qr')); };
+    document.head.append(tag);
+  });
+  return qrLib;
+}
+function qrBox(url) {
+  const box = h('div', { class: 'qr', 'aria-label': `QR code for ${url}`, role: 'img' });
+  loadQr().then((qrcode) => {
+    const q = qrcode(0, 'M');
+    q.addData(url);
+    q.make();
+    box.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+  }).catch(() => { box.textContent = 'QR code unavailable'; });
+  return box;
+}
+
+function roomsView() {
+  const head = h('div', { class: 'panel-head' }, h('h2', { class: 'panel-title' }, 'Rooms'));
+  if (S.rooms == null) return [head, noteLine(), errorLine(), S.error ? null : h('p', { class: 'muted' }, 'Loading your rooms…')];
+  const open = S.rooms.filter((r) => r.status === 'open');
+  const closed = S.rooms.filter((r) => r.status !== 'open');
+  const card = (r) => h('li', {}, h('a', { href: `#room/${r.id}`, class: 'card' },
+    h('span', { class: 'card-title' }, r.title),
+    h('span', { class: 'card-meta' }, r.status === 'open' ? `Code ${fmtCode(r.code)} · ${plural(r.players, 'student')}` : `${plural(r.players, 'student')} · closed`),
+    h('span', { class: 'card-date' }, r.status === 'open' ? `open until ${fmtDateTime(r.expiresAt)}` : fmtDate(r.closedAt ?? r.expiresAt))));
+  return [head, noteLine(), errorLine(),
+    open.length ? h('ul', { class: 'cards' }, open.map(card))
+      : h('div', { class: 'empty' }, h('p', {}, 'No open rooms.'), h('p', { class: 'muted' }, 'Open a room from one of your lists: the class joins with a code.'), h('a', { href: '#lists', class: 'btn btn-primary' }, 'My lists')),
+    h('h3', { class: 'section-title' }, 'History'),
+    !closed.length ? h('p', { class: 'muted small' }, 'Closed rooms and their results will be here.')
+      : S.hubPass ? h('ul', { class: 'cards' }, closed.map(card))
+        : h('p', { class: 'muted' }, `${plural(closed.length, 'closed room')}. The History of closed rooms and their results comes with the Hub pass. `,
+          h('a', { href: hubAccountUrl({ returnTo: location.href.split('#')[0] }) }, 'See the Hub pass'))];
+}
+
+function roomView() {
+  if (!S.room) return [h('h2', { class: 'panel-title' }, 'Room'), errorLine(), S.error ? null : h('p', { class: 'muted' }, 'Opening the room…')];
+  const { room, players } = S.room;
+  const open = room.status === 'open';
+  const url = joinUrl(room.code);
+  const close = async () => {
+    if (!confirm('Close this room? Students cannot join or play any more. The results stay.')) return;
+    try {
+      await fb.call('wnCloseRoom', { roomId: room.id });
+      clearInterval(roomTimer);
+      S.rooms = null;
+      // a closed room is History (Hub pass): go back to the list, which says what happens to it
+      S.flash = S.hubPass ? 'Room closed. You find it in the History below.' : 'Room closed. Its results are kept: the History of closed rooms comes with the Hub pass.';
+      go('rooms');
+    } catch (e) { S.error = reasonText(e); renderPanel(); }
+  };
+  const gameHead = room.games.map((g) => h('th', { scope: 'col' }, GAMES[g.type].meta.title));
+  const table = players.length
+    ? h('div', { class: 'tbl-wrap' }, h('table', { class: 'players' },
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Student'), gameHead, h('th', { scope: 'col' }, 'Stars'))),
+      h('tbody', {}, players.map((p) => h('tr', {},
+        h('th', { scope: 'row' }, p.nickname),
+        room.games.map((g, i) => h('td', {}, p.results[i] ? starRow(p.results[i].stars, 3, 14) : h('span', { class: 'muted small' }, '–'))),
+        h('td', { class: 'num' }, `${p.path.stars} / ${p.path.maxStars}`))))))
+    : h('p', { class: 'muted' }, open ? 'Nobody has joined yet. Show the code or the QR code to your class.' : 'Nobody joined this room.');
+  return [
+    h('div', { class: 'panel-head' }, h('a', { href: '#rooms', class: 'back' }, '← Rooms'),
+      open ? h('button', { type: 'button', class: 'link-btn danger', onclick: close }, 'Close room') : h('span', { class: 'muted small' }, 'Closed')),
+    h('h2', { class: 'panel-title' }, room.title),
+    h('p', { class: 'muted small' }, [room.listSnapshot.title, plural(room.games.length, 'game'), open ? `open until ${fmtDateTime(room.expiresAt)}` : `closed ${fmtDate(room.closedAt ?? room.expiresAt)}`].join(' · ')),
+    errorLine(),
+    open ? h('div', { class: 'join' },
+      h('div', { class: 'join-text' },
+        h('p', { class: 'join-label' }, 'Join at'),
+        h('p', { class: 'join-url' }, `${publicBaseUrl().replace(/^https?:\/\//, '')}/play`),
+        h('p', { class: 'join-label' }, 'with the code'),
+        h('p', { class: 'join-code' }, fmtCode(room.code)),
+        h('button', { type: 'button', class: 'btn btn-small', onclick: (e) => { navigator.clipboard?.writeText(url); e.currentTarget.textContent = 'Link copied'; } }, 'Copy the link')),
+      qrBox(url)) : null,
+    h('div', { class: 'panel-head' }, h('h3', { class: 'section-title' }, `Students (${players.length})`),
+      open ? h('button', { type: 'button', class: 'btn btn-small', onclick: refreshRoom }, 'Refresh') : null),
+    table,
+  ];
 }
 
 render();

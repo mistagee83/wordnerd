@@ -224,3 +224,8 @@
 .dr-input { flex: 1 1 160px; font-size: 1.15rem; padding: 10px 14px; }
 .dr-input.is-wrong { border-color: var(--c-error); }
 .dr-actions { display: flex; gap: 8px; }
+
+/* stars (shared by the teacher's room view and the student path) */
+.stars { display: inline-flex; gap: 2px; vertical-align: middle; }
+.star path { fill: transparent; stroke: var(--wn-amber-500); opacity: .55; }
+.star.is-on path { fill: var(--wn-amber-500); stroke: #b8760f; opacity: 1; }

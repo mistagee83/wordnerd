@@ -240,6 +240,34 @@ Flow (`functions/analyze.js`, logic in the pure `engines/analysis/`, so it is te
 Mock model in the emulator (`functions/llm/mock.js`): answers with the sample list; "MOCK:BROKEN",
 "MOCK:UNSUITABLE", "MOCK:UNAVAILABLE" in the text trigger the failure paths.
 
+### Rooms (F4)
+
+Decisions (András, 2026-11-21): 1–3 stars per game and a path; a room lives until the teacher closes it, at most
+7 days; a student may replay a game and the best try counts.
+
+- **Rules** (`engines/rooms/rooms.js`, pure, tested): 6-character codes without look-alikes (no 0/O, 1/I/L);
+  nicknames 2–20 characters, letters/digits/space/. - _ ', unique in a room ignoring case and spacing; the room
+  set-up (each of the seven games at most once, settings normalised, every game must build from the list);
+  result checks (bounds, item ids; stars computed on the server, never taken from the client); stars per game
+  (memory: moves per pair; matching: first-try matches; word search: wrong drags; crossword: help used; hangman:
+  words and lives kept; gapfill: share right; drowning: survived and misses); best try kept, tries counted, the
+  first try's misses kept for the teacher.
+- **Data**: `wnRooms/{roomId}` (`ownerUid`, `code`, `title`, `listId`, `listSnapshot`, `games[]`, `seed`,
+  `status`, `playerCount`, `createdAt`, `expiresAt`, `closedAt`), `wnRooms/{id}/players/{uid}` (`nickname`,
+  `key`, `joinedAt`, `results{ index: best try }`), `wnRooms/{id}/names/{key}` (nickname lock), `wnCodes/{code}`
+  (`roomId`, `expiresAt`, `open`; a closed or expired code can be reused). Only functions touch them.
+- **Callables**: `wnCreateRoom`, `wnListRooms` (with `hubPass`), `wnGetRoom` (a closed room = History → Hub
+  pass), `wnCloseRoom`, `wnJoinRoom` (same device = back in), `wnPlayRoom`, `wnSubmitResult`.
+- **Teacher**: "Open a room" in the list editor → set-up (title, games with their settings, all available games on)
+  → the room view: join address, big code, QR (qrcode-generator 1.4.4 from jsDelivr, as Hubbaloo), copy link, the
+  students table with stars per game and in total (refreshes every 10 s while open), Close room. Rooms tab: open
+  rooms, and the History of closed ones (Hub pass; without it, a count and a link).
+- **Student**: `/play` (`play.html`, `js/play.js`, `css/play.css`), also `/play?code=…` from the QR and the join
+  box on the home page. Anonymous account (own Firebase app instance), code + nickname, the path of games as numbered
+  stops with stars and the total, a game, then the stars of this try, "Play again" / "Back to the path". The room is
+  remembered on the device (localStorage per code), so a reload goes straight back in. A closed room shows the stars
+  but no play.
+
 ## 10. Brand and UI (decided 2026-11-21)
 
 WordNerd keeps its own look, not the Hub design system (apps have their own brand; only the sign-in panel text and

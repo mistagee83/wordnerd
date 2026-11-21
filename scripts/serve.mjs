@@ -34,6 +34,8 @@ createServer(async (req, res) => {
   let file = resolvePath(urlPath);
   try {
     if (!file) throw new Error('forbidden');
+    // like Cloudflare Pages: /play serves play.html
+    if (!extname(file)) { try { await stat(`${file}.html`); file = `${file}.html`; } catch { /* a folder or a missing page */ } }
     if ((await stat(file)).isDirectory()) file = join(file, 'index.html');
     const body = await readFile(file);
     res.writeHead(200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-cache' });

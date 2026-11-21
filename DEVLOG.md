@@ -295,3 +295,26 @@ the waiting screen says up to a minute.
 The first `main` push after the Pages project was created did not deploy: the Cloudflare Workers and Pages GitHub
 app had no access to `mistagee83/wordnerd` (GitHub asks for an e-mailed code before changing it, so András did that
 step). Functions with Auto were deployed before; this commit on `main` checks that pushes now deploy by themselves.
+
+## F4 – Rooms (2026-11-21)
+
+**Decisions (András)**: stars 1–3 per game with a path; a room lives until closed, at most 7 days; replays allowed,
+the best try counts.
+
+**Built**: rooms engine and tests (`engines/rooms/rooms.js`, `tests/rooms.test.mjs`); seven room callables
+(`functions/rooms.js`); teacher: room set-up dialog, room view with code, QR and students table, Rooms tab with
+the Hub-pass History; student page `/play` with join, path, games, stars; home page join box; shared `js/stars.js`;
+the local server serves extension-less pages like Pages.
+
+**Verified**
+- `npm test` 71 pass (7 new for rooms); `npm run test:emulator` 15 checks (4 new: open/join incl. rejoin, taken
+  nickname, wrong code; play with checked results, stars, best try and first-try misses; teacher view and refusals;
+  closing, and the History behind the Hub pass).
+- Browser against the emulators: teacher opens a room with all seven games (code, QR shown); a student at 375 px joins
+  with code + nickname, sees the path, plays Matching (3 stars, "Perfect!"), reloads and is back in with 3/21; a lost
+  Hangman sends 0 stars; the teacher's table shows the student with 3 stars; closing the room disables play on the
+  student's path; a room with only two games works. No overflow at 375 px.
+- Fixed on the way: "null" printed under the stars (replaceChildren with a null, also in Hangman without a clue);
+  after closing, the teacher's room view stayed "open" without a Hub pass – now it returns to Rooms with a note.
+
+**Not verified**: a real phone; a whole class at once; the QR scanned by a phone camera.

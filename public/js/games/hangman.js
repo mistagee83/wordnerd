@@ -129,7 +129,8 @@ export function render(p, ctx = {}) {
       }
     }
     update();
-    side.replaceChildren(round.clue ? h('p', { class: 'hm-clue' }, round.clue) : null, word, h('div', { class: 'hm-keys' }, keys), h('p', {}, next));
+    // (no null in replaceChildren: it would be printed as text when there is no clue)
+    side.replaceChildren(...[round.clue ? h('p', { class: 'hm-clue' }, round.clue) : null, word, h('div', { class: 'hm-keys' }, keys), h('p', {}, next)].filter(Boolean));
   }
 
   drawRound();

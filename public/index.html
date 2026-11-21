@@ -16,14 +16,24 @@
     .hero img { width: min(520px, 100%); height: auto; margin: 0 auto; }
     .hero p { margin: 0; color: var(--c-text-muted); }
     .btn-primary { background: linear-gradient(#ffb04a, #e08a12); color: #2b1a08; border-color: #ffcf8a; padding: 12px 28px; font-size: 1.05rem; }
+    .join-box { display: grid; gap: 8px; justify-items: center; }
+    .join-box label { color: var(--c-accent); font-family: var(--wn-font-display); font-size: 1.2rem; letter-spacing: .03em; }
+    .join-row { display: flex; gap: 8px; }
+    .join-row input { width: 11ch; font: 1.6rem var(--wn-font-display); letter-spacing: .15em; text-align: center; text-transform: uppercase; padding: 8px 10px; border-radius: var(--wn-radius-sm); border: 1px solid var(--c-wood-line); background: var(--c-field); color: var(--c-field-text); }
   </style>
 </head>
 <body>
   <main class="wrap hero">
     <img src="/img/brand/WordNerd_logo.png" alt="WordNerd" width="2000" height="400">
     <p>Turn any reading text into vocabulary games for your class.</p>
-    <p><a class="btn btn-primary" href="/teacher.html">I'm a teacher</a></p>
-    <p class="muted">Students: joining a game with a code is coming soon.</p>
+    <form class="join-box" action="/play" method="get">
+      <label for="code">Got a code from your teacher?</label>
+      <div class="join-row">
+        <input id="code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="ABC 234" required>
+        <button class="btn btn-primary">Join</button>
+      </div>
+    </form>
+    <p><a class="btn" href="/teacher">I'm a teacher</a></p>
   </main>
 </body>
 </html>
