@@ -92,7 +92,12 @@ games from it deterministically, shared with students through a code. One app un
   `engines/hub/` and `sso.js` into `public/js/hub/` (`--check` only reports); never edit the copies.
 - Copy engines into functions/: `npm run sync:engines` (automatic before a functions deploy)
 - Static build (what hosting runs): `npm run build:web` → `dist/`
-- Emulator end-to-end check of `wnAnalyze` (auth, Firestore, functions, mock model): `npm run test:emulator`.
+- Emulator end-to-end check of `wnAnalyze` (auth, Firestore, functions, mock model): `npm run test:emulator`
+  (`scripts/test-emulator.mjs`: runs the smoke test and then stops this repo's leftover Firestore emulator).
+- Live analysis with the real model, no Firebase, no credits (costs a real call, ~$0.01–0.02):
+  `node scripts/live-analyze.mjs [text|pdf|image file] [--level B1] [--lang hu] [--count 20]`; key from
+  `WN_GEMINI_API_KEY` / `HB_GEMINI_API_KEY` or `functions/.secret.local` (gitignored, never printed); output JSON
+  in `tmp-live/` (gitignored). Sample text: `scripts/samples/moving-city-b1.txt`.
   WordNerd's emulators use their own ports (auth 9109, functions 5011, Firestore 8090, hub 4410, UI 4010), so
   they never clash with a sister app's. On the "Mr. Andrew" machine set
   `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=D:/dev/.jtmp` first (Hubbaloo note).

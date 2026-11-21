@@ -39,3 +39,6 @@ dist/
 
 # Generated copies (scripts/sync-engines.mjs): engines/ and the Hub modules for the functions
 functions/engines/
+
+# Live analysis output (scripts/live-analyze.mjs)
+tmp-live/

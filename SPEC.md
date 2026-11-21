@@ -213,7 +213,9 @@ Flow (`functions/analyze.js`, logic in the pure `engines/analysis/`, so it is te
 3. Credits: `wordnerd/analyze` spent in a transaction (the Hub's pattern) → `insufficient` (with balance and cost)
    or `no-price` (no price in `settings/credits`: never a free call).
 4. Model: `gemini-3.8-flash` through the `generateContent` endpoint (the file goes in as an inline part), JSON
-   answer bound to `engines/analysis/schema.js`; versioned prompt `engines/analysis/prompt.js` (`analyze-v1`).
+   answer bound to `engines/analysis/schema.js`; versioned prompt `engines/analysis/prompt.js` (`analyze-v2` since the first live runs).
+   The schema keeps to type/properties/required/items/description: Gemini refused array length limits and enums
+   ("too many states for serving"); lengths and levels are checked in code.
    The material is treated as data (prompt-injection guard in the system text). Secret: `WN_GEMINI_API_KEY`.
 5. Code checks (`engines/analysis/normalize.js`): bad or duplicate items dropped; a broken example sentence or
    distractor list cleared (the games skip that word); the teacher's count caps the list; ids `w01…`; gapfill
@@ -286,7 +288,10 @@ Each phase ends with a DEVLOG entry, a demo of what was built and how it was ver
 
 - Upload limits: set in F2 as 40–2500 words of text or a 4 MB PDF/image (photo upload included); to revisit after
   real use.
-- Price of `wordnerd/analyze`: to set after measuring real token use (stored per list in `analysis.attempts`).
+- Price of `wordnerd/analyze`: to set by András. Measured 2026-11-21 (gemini-3.8-flash, Hubbaloo price table):
+  20 words from a 330-word text ≈ 1.1k input + 4.1k output tokens ≈ $0.016 (28 s); 12 words from a PDF ≈ 1.3k + 2.6k
+  ≈ $0.011 (18 s). From 2027-01-01 the model price doubles (≈ $0.03). Against the Hub's scale (1 credit ≈ one
+  Writing Review check, QotD generate = 3 credits at $0.033) **2 credits** looks right.
 - Manually added word: fill by hand or `wordnerd/enrich` for credits.
 - Session expiry; can a closed session be reopened.
 - Retention without a Hub pass (30 days?); deleting nicknames (GDPR); the Hub's account deletion must also remove

@@ -12,6 +12,6 @@
     "test": "node --test tests/*.test.mjs",
     "sync:hub": "node scripts/sync-hub.mjs",
     "sync:engines": "node scripts/sync-engines.mjs",
-    "test:emulator": "node scripts/sync-engines.mjs && firebase emulators:exec --only auth,firestore,functions \"node scripts/emulator-smoke.mjs\""
+    "test:emulator": "node scripts/test-emulator.mjs"
   }
 }

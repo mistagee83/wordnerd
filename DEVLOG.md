@@ -156,3 +156,31 @@ should cover several words (e.g. 4 words with 12 lives). A goal for the whole se
 - Secret `WN_GEMINI_API_KEY` does not exist yet in Secret Manager; no price `wordnerd/analyze` yet in the Hub's
   `settings/credits`; nothing deployed.
 - Hub rules: no WordNerd block needed yet (only functions touch `wnLists`); the read rule for teachers comes in F3.
+
+## F2 – first live runs with gemini-3.8-flash (2026-11-21)
+
+Key: András put it in `functions/.secret.local` (gitignored; named `HB_GEMINI_API_KEY`, the live script accepts
+both names). New `scripts/live-analyze.mjs`: the real model through the same `runAnalysis`, without Firebase or
+credits; prints the list and token use, writes the JSON to `tmp-live/`.
+
+1. **Schema refused** – HTTP 400 "The specified schema produces a constraint that has too many states for serving".
+   Fix: removed `maxItems` and the level `enum` from the schema (code checks them anyway).
+2. **Run 1 (analyze-v1, B1, hu, 20 words, text)**: ok in 28 s, 1004 in / 4161 out tokens, 20 items, 12 gaps,
+   0 warnings, all seven games build. Weak spots: several distractors were fragments or other forms ("look forward",
+   "get used" for "get around"), one distractor could fit ("nervous" for "furious"), an old-fashioned phrase in the
+   gapfill text ("many an advantage"), a space before punctuation after the gap.
+3. **Prompt analyze-v2**: distractors must be complete expressions of the same kind and form and must not fit;
+   modern everyday English in the gapfill text; punctuation right after the gap. Code now also removes a space
+   between the gap and punctuation.
+4. **Run 2 (v2, same text)**: ok in 28 s, 1102 / 4106 tokens, 20 items, 10 gaps, 0 warnings; distractors complete
+   and wrong (e.g. "get used to" → look out for / give up on / put away), text natural.
+5. **Run 3 (v2, PDF made from the sample, A2, de, 12 words)**: ok in 18 s, 1282 / 2605 tokens, 12 items, 11 gaps,
+   German translations; the file path (inline PDF part) works. At A2 some noun/adjective distractors are other list
+   words; acceptable, worth watching.
+- Cost (Hubbaloo price table, introductory price): ≈ $0.016 per 20-word analysis, ≈ $0.011 for 12 words; double
+  from 2027. Suggested price: 2 credits (SPEC 13).
+- `npm run test:emulator` now goes through `scripts/test-emulator.mjs`, which stops this repo's leftover Firestore
+  emulator after the run (it blocked the next run twice). 9/9 checks pass; `npm test` 57/57.
+
+**Still open before production**: secret `WN_GEMINI_API_KEY` in Secret Manager, the `wordnerd/analyze` price in the
+Hub's `settings/credits`, the first deploy (all with András's approval).

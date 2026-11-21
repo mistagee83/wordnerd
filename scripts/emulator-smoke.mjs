@@ -78,7 +78,7 @@ const list = await getDoc(`wnLists/${r1.result.listId}`);
 assert.equal(list.ownerUid, teacher.uid);
 assert.equal(list.items.length, 20);
 assert.equal(list.cloze.gaps.length, 11);
-assert.equal(list.analysis.promptVersion, 'analyze-v1');
+assert.equal(list.analysis.promptVersion, 'analyze-v2');
 assert.equal(list.analysis.model, 'mock');
 assert.equal(list.source.kind, 'text');
 assert.equal(await balanceOf(teacher.uid), 7);

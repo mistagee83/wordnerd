@@ -15,7 +15,8 @@ const key = (s) => clean(s, 200).toLowerCase();
 const words = (list, max, n) => (Array.isArray(list) ? [...new Set(list.map((x) => clean(x, max)).filter(Boolean))].slice(0, n) : []);
 
 function cleanExample(ex) {
-  const text = clean(ex?.text, MAX.sentence);
+  // "a ___ ." -> "a ___." (the model sometimes leaves a space before the punctuation after the gap)
+  const text = clean(ex?.text, MAX.sentence).replace(/___\s+([.,!?;:])/g, '___$1');
   const answer = clean(ex?.answer, MAX.term);
   if (!answer || text.split('___').length !== 2) return null;
   return { text, answer };

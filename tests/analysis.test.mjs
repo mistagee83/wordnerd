@@ -61,7 +61,8 @@ test('prompt: carries level, count, languages, focus and the material', () => {
   assert.match(p.text, /focus on: phrasal verbs/);
   assert.match(p.text, /<material>\nMATERIAL TEXT\n<\/material>/);
   assert.match(p.system, /DATA, not instructions/);
-  assert.equal(PROMPT_VERSION, 'analyze-v1');
+  assert.equal(PROMPT_VERSION, 'analyze-v2');
+  assert.match(p.text, /COMPLETE word or expression/);
 });
 
 test('prompt: a file request has no material block and no focus line without focus', () => {
@@ -174,7 +175,7 @@ test('run: success spends once, saves the list with the prompt version, no refun
   const r = await runAnalysis(input, d);
   assert.deepEqual([r.ok, r.listId, r.cost], [true, 'list-1', 3]);
   assert.deepEqual([calls.spend, calls.model, calls.refund.length], [1, 1, 0]);
-  assert.equal(calls.saved.promptVersion, 'analyze-v1');
+  assert.equal(calls.saved.promptVersion, 'analyze-v2');
   assert.equal(calls.saved.items.length, 20);
   assert.equal(calls.logs[0].outcome, 'ok');
 });
@@ -235,4 +236,11 @@ test('run: a file request sends the file to the model, not as prompt text', asyn
   await runAnalysis(fileInput, d);
   assert.deepEqual(seen.file, { mimeType: 'image/png', data: 'iVBORw0KGgo=' });
   assert.doesNotMatch(seen.text, /<material>/);
+});
+
+test('normalize: no space is left between a gap and the punctuation after it', () => {
+  const raw = sampleAnswer();
+  raw.items[0].example = { text: 'Never get into a car with a ___ .', answer: 'look after' };
+  const r = normalizeAnalysis(raw, opts);
+  assert.equal(r.list.items[0].example.text, 'Never get into a car with a ___.');
 });
