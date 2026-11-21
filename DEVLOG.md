@@ -289,3 +289,9 @@ the waiting screen says up to a minute.
 - `npm test` 64 pass (auto input, prompt, cap at 40, no padding); `npm run test:emulator` 11/11 (its cleanup also
   stopped the background emulators started for manual testing – restart them when needed).
 - Not live yet: needs `functions:wordnerd` deploy (prompt v3, input) and `main` push (the form).
+
+## Pages auto-deploy fixed (2026-11-21)
+
+The first `main` push after the Pages project was created did not deploy: the Cloudflare Workers and Pages GitHub
+app had no access to `mistagee83/wordnerd` (GitHub asks for an e-mailed code before changing it, so András did that
+step). Functions with Auto were deployed before; this commit on `main` checks that pushes now deploy by themselves.
