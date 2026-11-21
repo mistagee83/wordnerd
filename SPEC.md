@@ -196,10 +196,37 @@ vocabulary practice tool) or through a callable.
 
 Codebase `wordnerd`, Node 22, 2nd gen, europe-west1, secrets in Secret Manager.
 
-- `analyzeText` (callable, teacher) – size checks, credit spend, Gemini (`gemini-3.8-flash`; never change the
-  name on your own; if unavailable, stop and ask), schema validation, refund on error, writes `wnLists`.
+- `wnAnalyze` (callable, teacher; built in F2) – see "Analysis" below.
 - `joinSession` (callable, anonymous) – code check, session open, nickname unique in the session.
 - Later: `enrichItem`, cleanup of expired sessions and old data.
+
+### Analysis (F2)
+
+Flow (`functions/analyze.js`, logic in the pure `engines/analysis/`, so it is testable without Firebase):
+
+1. Teacher check (signed in, not anonymous) → `teacher-only` / `sign-in`.
+2. Input check (`engines/analysis/input.js`, the same rules run in the browser in F3), before any credit is spent:
+   `kind` `text` (40–2500 words, at most 20 000 characters) or `file` (PDF, PNG, JPEG or WebP, base64 in the
+   request, at most 4 MB before encoding); `level` A1–C1; `supportLang` from `engines/analysis/languages.js`
+   (30 languages); `count` 10–30 (default 20); optional `focus` (120 chars) and `title` (80 chars).
+   Target language: English only for now.
+3. Credits: `wordnerd/analyze` spent in a transaction (the Hub's pattern) → `insufficient` (with balance and cost)
+   or `no-price` (no price in `settings/credits`: never a free call).
+4. Model: `gemini-3.8-flash` through the `generateContent` endpoint (the file goes in as an inline part), JSON
+   answer bound to `engines/analysis/schema.js`; versioned prompt `engines/analysis/prompt.js` (`analyze-v1`).
+   The material is treated as data (prompt-injection guard in the system text). Secret: `WN_GEMINI_API_KEY`.
+5. Code checks (`engines/analysis/normalize.js`): bad or duplicate items dropped; a broken example sentence or
+   distractor list cleared (the games skip that word); the teacher's count caps the list; ids `w01…`; gapfill
+   gaps that do not point at a list word are written into the text and the rest renumbered; at least 8 items and
+   4 gaps, else the answer is unusable. One retry after a broken or unusable answer.
+6. Success: `wnLists/{id}` written (list + `ownerUid`, `analysis: { promptVersion, model, attempts[] }` with token
+   usage per attempt, for pricing), returns `{ listId, cost, warnings }`. Failure after the spend: credits
+   refunded; `unsuitable` (the model says the material is not usable, with its reason; no retry),
+   `model-unavailable` (stop and tell András), `analysis-failed`.
+7. The uploaded file is never stored; it lives only in the request.
+
+Mock model in the emulator (`functions/llm/mock.js`): answers with the sample list; "MOCK:BROKEN",
+"MOCK:UNSUITABLE", "MOCK:UNAVAILABLE" in the text trigger the failure paths.
 
 ## 10. Brand and UI (decided 2026-11-21)
 
@@ -257,7 +284,9 @@ Each phase ends with a DEVLOG entry, a demo of what was built and how it was ver
   the student sees the set as a path of games with their stars and a total; the teacher's monitor shows the same.
   No accounts, so it lives only inside the session.
 
-- Upload limits exactly (MB, words); photo upload in the first version or later.
+- Upload limits: set in F2 as 40–2500 words of text or a 4 MB PDF/image (photo upload included); to revisit after
+  real use.
+- Price of `wordnerd/analyze`: to set after measuring real token use (stored per list in `analysis.attempts`).
 - Manually added word: fill by hand or `wordnerd/enrich` for credits.
 - Session expiry; can a closed session be reopened.
 - Retention without a Hub pass (30 days?); deleting nicknames (GDPR); the Hub's account deletion must also remove

@@ -123,3 +123,36 @@ should cover several words (e.g. 4 words with 12 lives). A goal for the whole se
 - Browser: crossword with 3 rows solved (tiles S I B), a wrong guess (2 left), then the right guess ends the game
   and greys the 4 unsolved rows; hangman two words won with 2 misses each (8 balloons left), third word lost the
   rest and the game ended (dots: won, won, lost). Word search layout shows across, down and diagonal words.
+
+## F2 – Analysis (2026-11-21)
+
+**Built**
+- `engines/analysis/` (pure, tested, copied into functions by sync-engines): `languages.js` (target English,
+  30 support languages, levels), `input.js` (request checks and limits), `schema.js` (the model's JSON schema),
+  `prompt.js` (versioned prompt `analyze-v1`, prompt-injection guard), `normalize.js` (model answer → list
+  document: ids, caps, dropped/cleared fields, gap repair and renumbering), `run.js` (the whole flow with injected
+  credits/model/storage: spend → model → checks → save; one retry; refund on every failure).
+- `engines/fixtures/sample-answer.js`: the sample list in the model's output shape.
+- `functions/`: `index.js` (`wnAnalyze`, secret `WN_GEMINI_API_KEY`, 300 s, 512 MiB), `analyze.js` (teacher
+  check, errors mapped to reasons), `credits.js` (the Hub's spend/refund pattern, app `wordnerd`), `common.js`,
+  `config.js` (model `gemini-3.8-flash`, mock switch), `llm/gemini.js` (generateContent with inline file and JSON
+  schema; unavailable model detected), `llm/mock.js`. Dependencies: firebase-admin, firebase-functions.
+- `scripts/emulator-smoke.mjs` + `npm run test:emulator`: dependency-free end-to-end check over the emulators' REST
+  APIs. WordNerd emulators moved to their own ports (the default ones were in use by another app's emulators).
+
+**Verified**
+- `npm test`: 56 pass (19 new: input limits incl. base64 size, prompt contents, schema, normalising the sample
+  answer into a list all seven games accept, caps, dropped/cleared fields, gap repair, failure reasons; run:
+  success, retry, double failure refund, unsuitable without retry, unavailable model, failed save refunded, no
+  model call without credits, file sent as a file part).
+- `npm run test:emulator`: 9 checks pass against real Auth/Firestore/Functions emulators with the mock model:
+  success (3 credits spent, list with 20 items and 11 gaps stored), broken answer refunded, unsuitable refunded,
+  unavailable model refunded, ledger 4 spends / 3 refunds with app `wordnerd`, bad input refused before spending,
+  insufficient credits, anonymous and signed-out callers refused, missing price refused.
+
+**Not verified / open**
+- No real Gemini call yet: the `generateContent` request shape (inline file, `responseJsonSchema`,
+  `thinkingLevel`) and the quality of the answers need one live run with a real key (costs a few cents).
+- Secret `WN_GEMINI_API_KEY` does not exist yet in Secret Manager; no price `wordnerd/analyze` yet in the Hub's
+  `settings/credits`; nothing deployed.
+- Hub rules: no WordNerd block needed yet (only functions touch `wnLists`); the read rule for teachers comes in F3.

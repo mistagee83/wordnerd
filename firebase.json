@@ -30,10 +30,34 @@
   ],
   "emulators": {
     "singleProjectMode": true,
-    "auth": { "host": "127.0.0.1", "port": 9099 },
-    "functions": { "host": "127.0.0.1", "port": 5001 },
-    "firestore": { "host": "127.0.0.1", "port": 8080 },
-    "storage": { "host": "127.0.0.1", "port": 9199 },
-    "ui": { "enabled": true, "host": "127.0.0.1", "port": 4000 }
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9109
+    },
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5011
+    },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8090
+    },
+    "storage": {
+      "host": "127.0.0.1",
+      "port": 9209
+    },
+    "hub": {
+      "host": "127.0.0.1",
+      "port": 4410
+    },
+    "logging": {
+      "host": "127.0.0.1",
+      "port": 4510
+    },
+    "ui": {
+      "enabled": true,
+      "host": "127.0.0.1",
+      "port": 4010
+    }
   }
 }

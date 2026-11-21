@@ -92,4 +92,10 @@ games from it deterministically, shared with students through a code. One app un
   `engines/hub/` and `sso.js` into `public/js/hub/` (`--check` only reports); never edit the copies.
 - Copy engines into functions/: `npm run sync:engines` (automatic before a functions deploy)
 - Static build (what hosting runs): `npm run build:web` → `dist/`
-- Deploy (only with András's approval): `firebase deploy --only functions:wordnerd`
+- Emulator end-to-end check of `wnAnalyze` (auth, Firestore, functions, mock model): `npm run test:emulator`.
+  WordNerd's emulators use their own ports (auth 9109, functions 5011, Firestore 8090, hub 4410, UI 4010), so
+  they never clash with a sister app's. On the "Mr. Andrew" machine set
+  `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=D:/dev/.jtmp` first (Hubbaloo note).
+- Functions dependencies: `npm install --prefix functions` (firebase-admin, firebase-functions; nothing else).
+- Deploy (only with András's approval): `firebase deploy --only functions:wordnerd` (needs the secret
+  `WN_GEMINI_API_KEY` in Secret Manager and a `wordnerd/analyze` price in the Hub's `settings/credits`).
