@@ -27,9 +27,10 @@
   --wn-green-500: #72d90a;
   --wn-red-600: #af111e;
 
-  /* Type: old site used Tenor Sans + Source Sans Pro (Google Fonts) */
-  --wn-font-display: 'Tenor Sans', 'Source Sans 3', system-ui, sans-serif;
-  --wn-font-body: 'Source Sans 3', system-ui, sans-serif;
+  /* Type (decided 2026-11-21, replacing the old site's Tenor Sans + Source Sans): Luckiest Guy for the fixed
+     English headings only (capitals, Latin-1: no ő/ű), Lexend for everything else, teacher text included. */
+  --wn-font-display: 'Luckiest Guy', 'Lexend', system-ui, sans-serif;
+  --wn-font-body: 'Lexend', system-ui, sans-serif;
 
   --wn-radius-sm: 6px;
   --wn-radius-md: 10px;

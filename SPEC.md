@@ -248,6 +248,9 @@ structure are shared with the Hub).
   `design/brand-source/` (`.ai`, `.eps`). Never redraw or recolour. An SVG export is still to do.
 - **Colours as they were:** dark textured brown board, wooden tabs and panels, amber/orange lettering. Tokens in
   `public/css/tokens.css`, role variables only in `public/css/base.css`.
+- **Type (decided 2026-11-21):** Luckiest Guy for the fixed English headings, tab labels and short UI titles;
+  Lexend for everything else. Luckiest Guy has capitals only and no Latin Extended-A letters (ő, ű…), so any
+  text a teacher or the analysis writes (list titles, words, prompts) stays in Lexend.
 - **Dashboard modelled on the old one** (`reference/screens/dashboard-empty.jpg`, `dictionary.png`): main panel in
   the middle, wooden tabs on both sides, name bar at the bottom.
 

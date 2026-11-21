@@ -31,7 +31,7 @@ function phoneBox() {
     s('rect', { x: 14, y: 44, width: 132, height: 14, rx: 3, fill: '#c8102e', stroke: '#8f0b20', 'stroke-width': 3 }),
     s('rect', { x: 18, y: 58, width: 124, height: 252, fill: '#c8102e', stroke: '#8f0b20', 'stroke-width': 3 }),
     s('rect', { x: 32, y: 64, width: 96, height: 20, fill: '#1f1913' }),
-    s('text', { x: 80, y: 78.5, 'text-anchor': 'middle', fill: '#fcf4e7', 'font-size': 11, 'font-family': 'Tenor Sans, sans-serif', 'letter-spacing': 1.5 }, 'TELEPHONE'),
+    s('text', { x: 80, y: 78.5, 'text-anchor': 'middle', fill: '#fcf4e7', 'font-size': 11, 'font-family': 'Luckiest Guy, Lexend, sans-serif', 'letter-spacing': 1.2 }, 'TELEPHONE'),
     s('circle', { cx: 80, cy: 28, r: 6, fill: '#f8b856' }),
     inner, ...bars,
     s('rect', { x: G.x, y: G.y, width: G.w, height: G.h, fill: 'none', stroke: '#8f0b20', 'stroke-width': 3 }),

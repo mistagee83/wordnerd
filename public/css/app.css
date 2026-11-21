@@ -68,7 +68,7 @@ body.teacher { background: var(--board); background-attachment: fixed; }
 .tab {
   display: grid; justify-items: center; gap: 8px; padding: 18px 8px 14px; border-radius: var(--wn-radius-md);
   background: var(--wood); border: 2px solid var(--wn-wood-line); box-shadow: 0 5px 0 rgb(0 0 0 / .3);
-  color: var(--wn-amber-500); text-decoration: none; font: 600 1.02rem var(--wn-font-body); text-align: center;
+  color: var(--wn-amber-500); text-decoration: none; font: 1.05rem var(--wn-font-display); letter-spacing: .04em; text-align: center;
   transition: transform .12s ease, background .2s;
 }
 .tab:hover { transform: translateY(-2px); }
@@ -118,7 +118,7 @@ body.teacher { background: var(--board); background-attachment: fixed; }
   transition: transform .12s ease, border-color .12s;
 }
 .card:hover, .card:focus-visible { transform: translateY(-2px); border-color: var(--wn-amber-500); }
-.card-title { font: 1.15rem var(--wn-font-display); color: var(--wn-wood-700); }
+.card-title { font: 600 1.1rem var(--wn-font-body); color: var(--wn-wood-700); }
 .card-meta { font-size: .9rem; color: #6b5a44; }
 .card-date { font-size: .82rem; color: #8f7c62; }
 .empty { text-align: center; padding: 40px 10px; display: grid; gap: 8px; justify-items: center; }
@@ -143,11 +143,11 @@ body.teacher { background: var(--board); background-attachment: fixed; }
 .overlay { position: fixed; inset: 0; z-index: 100; background: rgb(20 15 10 / .82); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
 .wait { text-align: center; display: grid; gap: 10px; justify-items: center; }
 .wait-logo { width: min(300px, 70vw); animation: pulse 1.4s ease-in-out infinite; }
-.wait-line { font: 1.3rem var(--wn-font-display); color: var(--wn-amber-500); margin: 0; }
+.wait-line { font: 1.4rem var(--wn-font-display); letter-spacing: .03em; color: var(--wn-amber-500); margin: 0; }
 
 /* ---------- list editor ---------- */
 .back { color: var(--c-accent); text-decoration: none; }
-.list-title { font: 1.5rem var(--wn-font-display); margin: 4px 0 6px; }
+.list-title { font: 600 1.35rem var(--wn-font-body); margin: 4px 0 6px; }
 .editor { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; align-items: start; margin-top: 10px; }
 @media (max-width: 1100px) { .editor { grid-template-columns: 1fr; } }
 /* word and translation side by side, the definition on its own line under them */

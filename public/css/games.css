@@ -218,7 +218,7 @@
 .dr-box.is-drain .dr-water { animation: dr-drain .5s ease; }
 @keyframes dr-drain { 40% { filter: brightness(1.35); } }
 .dr-box.is-full .dr-wave, .dr-box.is-full .dr-cap { animation-play-state: paused; }
-.dr-prompt { font: 600 clamp(1.3rem, 4.5vw, 1.9rem) var(--wn-font-display); color: var(--c-accent); margin: 0 0 14px; min-height: 1.3em; }
+.dr-prompt { font: 600 clamp(1.3rem, 4.5vw, 1.9rem) var(--wn-font-body); color: var(--c-accent); margin: 0 0 14px; min-height: 1.3em; }
 .dr-prompt.is-new { animation: g-pop .3s ease; }
 .dr-form { display: flex; gap: 8px; flex-wrap: wrap; }
 .dr-input { flex: 1 1 160px; font-size: 1.15rem; padding: 10px 14px; }

@@ -239,3 +239,10 @@ of `wordnerd/analyze` in the Hub admin. Secret Manager still has no `WN_GEMINI_A
 - Not yet: the Hub site's `main` (its "Open app" button checks the same list in the browser). The push to the Hub's
   `main` was stopped by the permission check and waits for András's explicit go-ahead. `origin/main..dev` holds only
   docs, the already deployed `functions/.env.mrashub` and this `shared/sso.js` change.
+
+## Type change (2026-11-21)
+
+András did not like the old Tenor Sans + Source Sans; from four pairings shown side by side he chose Luckiest Guy
+(headings) + Lexend (text). Luckiest Guy is used only for fixed English headings and the tab labels (capitals only,
+no ő/ű); list titles, words, the drowning prompt and other teacher/AI text use Lexend. The telephone-box sign uses
+Luckiest Guy. Checked in the browser: both fonts load, the computed families are right, no overflow.
