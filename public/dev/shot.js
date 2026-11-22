@@ -12,7 +12,11 @@ import * as drowning from '/js/games/drowning.js';
 const UI = { memory, matching, wordsearch, crossword, hangman, gapfill, drowning };
 const params = new URLSearchParams(location.search);
 const id = GAME_IDS.includes(params.get('game')) ? params.get('game') : 'memory';
-const puzzle = generateGame(id, list, { ...GAMES[id].defaults }, params.get('seed') || 'landing:1');
+// English definitions as clues, not the sample list's Hungarian translations: the landing page is international
+// (András, 2026-11-22). Games whose clue is the word itself (word search) keep their default.
+const settings = { ...GAMES[id].defaults };
+if (settings.clueMode === 'translation') settings.clueMode = 'definition';
+const puzzle = generateGame(id, list, settings, params.get('seed') || 'landing:1');
 const mounted = UI[id].render(puzzle, { lang: list.targetLang, onFinish: () => {} });
 document.getElementById('game').replaceChildren(mounted.el);
 document.title = `${GAMES[id].meta.title} – shot`;
