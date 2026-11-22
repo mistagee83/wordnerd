@@ -40,7 +40,7 @@ const REASON_TEXT = {
   unsuitable: 'This material cannot be used for vocabulary practice.',
   'model-unavailable': 'The AI service is not available right now. Your credits were not used.',
   'analysis-failed': 'The analysis did not work this time. Your credits were given back. Please try again.',
-  timeout: 'The analysis took too long. Look in My lists: if the list isn't there, your credits were given back and you can try again.',
+  timeout: "The analysis took too long. Look in My lists: if the list isn't there, your credits were given back and you can try again.",
   network: 'The connection was lost. Please check your internet and try again.',
   'text-too-short': `The text is too short: at least ${INPUT_LIMITS.minWords} words.`,
   'text-too-long': `The text is too long: at most ${INPUT_LIMITS.maxWords} words. Use one reading or one lesson.`,
@@ -332,7 +332,7 @@ function listsView() {
   if (!S.lists.length) {
     return [head, errorLine(), h('div', { class: 'empty' },
       h('p', {}, 'No lists yet.'),
-      h('p', { class: 'muted' }, 'Paste a reading text or upload a page. You'll get a word list and seven games from it.'),
+      h('p', { class: 'muted' }, "Paste a reading text or upload a page. You'll get a word list and seven games from it."),
       h('a', { href: '#new', class: 'btn btn-primary' }, 'Make your first list'))];
   }
   return [head, errorLine(), h('ul', { class: 'cards' }, S.lists.map((l) => h('li', {},
@@ -570,7 +570,7 @@ function listView() {
         h('span', { class: 'game-blurb' }, test.ok ? GAME_BLURB[id] : `Not available: ${test.reason}`)));
     })),
     h('button', { type: 'button', class: 'btn btn-primary btn-wide', onclick: () => { if (S.dirty) { S.error = 'Save or discard your changes first.'; renderPanel(); return; } openRoomSetup(); } }, 'Open a room'),
-    h('p', { class: 'muted small' }, 'Students join with a code and a nickname. They don't need an account.'));
+    h('p', { class: 'muted small' }, "Students join with a code and a nickname. They don't need an account."));
 
   return [
     h('div', { class: 'panel-head' },
