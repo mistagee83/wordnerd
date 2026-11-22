@@ -393,3 +393,14 @@ same code through `wnDevCleanup`); a real class.
 
 **Deploy needs**: `functions:wordnerd` (new `wnCleanup`, a Cloud Scheduler job in mrashub; Hubbaloo already has
 one) and `main`.
+
+## F5 live (2026-11-22, approved by András)
+
+- `functions:wordnerd` deployed: `wnCleanup` created (Cloud Scheduler job `firebase-schedule-wnCleanup-europe-west1`,
+  every day 03:30 Europe/Budapest, enabled), the other callables updated; `wnDevCleanup` is emulator-only and was
+  not deployed.
+- `main` fast-forwarded to `95aaddc`; Pages served the new `teacher.js`, `app.css` and `engines/rooms/rooms.js`
+  within a minute. The live teacher page loads without console errors; `wnListRooms` refuses an unsigned call with
+  `sign-in`.
+- Not tried live: the monitor with real students (needs András's account) and the first scheduled run (tonight; check
+  its `wnCleanup {"expired":…,"deleted":…}` log line). The job was not run by hand, so no live room was touched.
