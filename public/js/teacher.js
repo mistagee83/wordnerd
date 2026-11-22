@@ -39,8 +39,8 @@ const REASON_TEXT = {
   'no-price': 'Analysis is not available right now. Please try again later.',
   unsuitable: 'This material cannot be used for vocabulary practice.',
   'model-unavailable': 'The AI service is not available right now. Your credits were not used.',
-  'analysis-failed': 'The analysis did not work this time. Your credits were given back – please try again.',
-  timeout: 'The analysis took too long. Your credits are given back if it failed – please check My lists, then try again.',
+  'analysis-failed': 'The analysis did not work this time. Your credits were given back. Please try again.',
+  timeout: 'The analysis took too long. Look in My lists: if the list isn't there, your credits were given back and you can try again.',
   network: 'The connection was lost. Please check your internet and try again.',
   'text-too-short': `The text is too short: at least ${INPUT_LIMITS.minWords} words.`,
   'text-too-long': `The text is too long: at most ${INPUT_LIMITS.maxWords} words. Use one reading or one lesson.`,
@@ -67,7 +67,7 @@ const REASON_TEXT = {
   'unknown-game': 'Unknown game. Please reload the page.',
   'game-unavailable': 'One of the games cannot be built from this list.',
   room: 'This room does not exist any more.',
-  'hub-pass': 'Closed rooms and their results are your History: they come with the Hub pass.',
+  'hub-pass': 'You need a Hub pass to keep closed rooms and their results in your History.',
   'no-code': 'No free room code right now. Please try again.',
 };
 const reasonText = (err) => REASON_TEXT[err?.reason] ?? 'Something went wrong. Please try again.';
@@ -332,7 +332,7 @@ function listsView() {
   if (!S.lists.length) {
     return [head, errorLine(), h('div', { class: 'empty' },
       h('p', {}, 'No lists yet.'),
-      h('p', { class: 'muted' }, 'Paste a reading text or upload a lesson page: WordNerd picks the vocabulary and builds seven games from it.'),
+      h('p', { class: 'muted' }, 'Paste a reading text or upload a page. You'll get a word list and seven games from it.'),
       h('a', { href: '#new', class: 'btn btn-primary' }, 'Make your first list'))];
   }
   return [head, errorLine(), h('ul', { class: 'cards' }, S.lists.map((l) => h('li', {},
@@ -425,7 +425,7 @@ function newListView() {
     try {
       const res = await fb.call('wnAnalyze', data, { timeout: 330000 });
       S.analyzing = false; S.form = null; closeOverlay();
-      S.flash = res.warnings ? `Your list is ready. ${plural(res.warnings, 'small problem')} in the AI answer were fixed automatically.` : 'Your list is ready. Check the words, then try the games.';
+      S.flash = 'Your list is ready. Check the words, then try the games.';
       S.list = null;
       location.hash = `list/${res.listId}`;
     } catch (err) {
@@ -437,7 +437,7 @@ function newListView() {
 
   return [
     h('div', { class: 'panel-head' }, h('h2', { class: 'panel-title' }, 'New list')),
-    h('p', { class: 'muted' }, 'Give WordNerd one reading or lesson. It picks the most useful words for your level, writes definitions, translations, example sentences and a gapfill text, and builds seven games.'),
+    h('p', { class: 'muted' }, 'One reading or one lesson at a time. You get the key words for your level with definitions, translations and example sentences, plus a short gapfill text.'),
     errorLine(),
     h('form', { class: 'new-form', onsubmit: submit },
       h('div', { class: 'segs', role: 'group', 'aria-label': 'Material' }, kindBtn('text', 'Paste text'), kindBtn('file', 'Upload a file')),
@@ -456,7 +456,7 @@ function newListView() {
 }
 
 // the waiting screen while the analysis runs (about half a minute)
-const WAIT_LINES = ['Reading your text…', 'Choosing the most useful words…', 'Writing definitions and translations…', 'Writing example sentences…', 'Writing a gapfill text…', 'Checking everything…'];
+const WAIT_LINES = ['Making your word list…'];
 let $overlay = null;
 let waitTimer = null;
 function openProgress() {
@@ -570,7 +570,7 @@ function listView() {
         h('span', { class: 'game-blurb' }, test.ok ? GAME_BLURB[id] : `Not available: ${test.reason}`)));
     })),
     h('button', { type: 'button', class: 'btn btn-primary btn-wide', onclick: () => { if (S.dirty) { S.error = 'Save or discard your changes first.'; renderPanel(); return; } openRoomSetup(); } }, 'Open a room'),
-    h('p', { class: 'muted small' }, 'Your class joins with a code: no accounts, just a nickname.'));
+    h('p', { class: 'muted small' }, 'Students join with a code and a nickname. They don't need an account.'));
 
   return [
     h('div', { class: 'panel-head' },
@@ -690,7 +690,7 @@ async function openListPicker() {
   }
   if ($overlay !== mine) return; // closed meanwhile
   if (!S.lists.length) {
-    body.replaceChildren(h('p', {}, 'No lists yet. Make a list first: the room is built from it.'),
+    body.replaceChildren(h('p', {}, 'No lists yet. A room needs a list, so make one first.'),
       h('p', { class: 'rs-actions' }, h('a', { href: '#new', class: 'btn btn-primary', onclick: closeOverlay }, 'New list')));
     return;
   }
@@ -756,7 +756,7 @@ function roomsView() {
   const closed = S.rooms.length - open.length;
   return [head, noteLine(), errorLine(),
     open.length ? h('ul', { class: 'cards' }, open.map(roomCard))
-      : h('div', { class: 'empty' }, h('p', {}, 'No open rooms.'), h('p', { class: 'muted' }, 'Start a room from one of your lists: the class joins with a code.')),
+      : h('div', { class: 'empty' }, h('p', {}, 'No open rooms.'), h('p', { class: 'muted' }, 'Start a room from one of your lists. Students join with a code.')),
     closed ? h('p', { class: 'muted small' }, `${plural(closed, 'closed room')}: `, h('a', { href: '#results' }, 'see Results')) : null];
 }
 

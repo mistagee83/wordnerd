@@ -54,7 +54,7 @@ export function render(p, ctx = {}) {
     flash(guessForm, 'is-wrong');
     guessInput.select();
     updateGuess();
-    if (guesses <= 0) line.textContent = 'No guesses left: solve the rows to uncover the secret word.';
+    if (guesses <= 0) line.textContent = 'No guesses left. Solve the rows to see the secret word.';
   } }, guessInput, guessBtn);
   const secretBox = h('div', { class: 'cw-secret' }, h('span', { class: 'cw-secret-label' }, 'Secret word'), h('span', { class: 'cw-secret-tiles' }, tiles), guessForm);
 

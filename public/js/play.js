@@ -107,7 +107,7 @@ async function checkRoom() {
   return true;
 }
 
-function roomClosed(text = 'Your teacher closed the room. Your stars are saved; you cannot play any more.') {
+function roomClosed(text = 'Your teacher closed the room. Your stars are saved.') {
   clearInterval(watchTimer);
   S.room.status = 'closed';
   S.closedNote = text;
@@ -171,7 +171,7 @@ function pathView() {
       h('div', { class: 'p-who' }, h('span', { class: 'p-nick' }, me.nickname), h('span', { class: 'p-total' }, starRow(1, 1, 16), ` ${p.stars} / ${p.maxStars}`))),
     h('main', { class: 'p-main' },
       h('h1', { class: 'p-title' }, room.title),
-      closed ? h('p', { class: 'msg msg-error', role: 'alert' }, S.closedNote ?? 'This room is closed: you can look at your stars, but not play any more.') : h('p', { class: 'p-hint' }, `${p.done} of ${p.games.length} games done. Play them in any order – you can play again to get more stars.`),
+      closed ? h('p', { class: 'msg msg-error', role: 'alert' }, S.closedNote ?? 'This room is closed. You can still see your stars.') : h('p', { class: 'p-hint' }, `${p.done} of ${p.games.length} games done. Play them in any order. You can play again to get more stars.`),
       errorLine(),
       h('ol', { class: 'path' }, p.games.map((g) => h('li', { class: `stop${g.done ? ' is-done' : ''}` },
         h('button', { type: 'button', class: 'stop-btn', disabled: closed || S.busy, onclick: () => playGame(g.index) },
