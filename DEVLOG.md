@@ -462,3 +462,8 @@ F6 part 1 live on 2026-11-22 (approved by András): `main` fast-forwarded to `7e
 has the `#sso` forwarding and no `noindex` (meta or header); `/teacher`, `/play` and `/dev/*` send
 `X-Robots-Tag: noindex`; `robots.txt` and `sitemap.xml` served; `og-image.png` 200 `image/png`; the four re-taken
 screenshots are the new (English) files. Next: András publishes the Hub product, then the end-to-end test.
+
+F6 done on 2026-11-22: András published the Hub product (`mrandrewshub.com/p/wordnerd`; checked: cover, text,
+tags, Open app) and had already run the end-to-end test himself with a new teacher account: everything worked
+(sign-up credits, list, room, phones, monitor, closing, Results, one-click Open app from the Hub). WordNerd is
+launched. Still to check: the first `wnCleanup` log line (daily 03:30 Europe/Budapest).

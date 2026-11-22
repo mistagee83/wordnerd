@@ -332,7 +332,9 @@ Rooms (F4) and Results (F5) are described in section 9. Locally the page uses th
 
 - Address: `https://wordnerd.mrandrewshub.com` (decided 2026-11-21).
 - No Netlify (decided 2026-11-21): testing happens on the live address, which is fine while the Hub does not list
-  WordNerd (the Hub is not advertised before December 2026). The site is `noindex` until launch.
+  WordNerd (the Hub is not advertised before December 2026). Since launch (F6, 2026-11-22) only the
+  landing page is indexed; `/teacher`, `/play` and `/dev/` send `X-Robots-Tag: noindex` (`_headers`, `robots.txt`).
+- Hub product: slug `wordnerd`, `appUrl` the root; the landing page forwards `#sso=<code>` to `/teacher`.
 - Static front end on Cloudflare Pages from `main` (build `node scripts/build-web.mjs`, output `dist`), like the Hub
   and Hubbaloo (decided 2026-11-21). Live since 2026-11-21: Pages project `wordnerd` (`wordnerd-ecl.pages.dev`),
   custom domain `wordnerd.mrandrewshub.com` (CNAME created by Cloudflare), Firebase Auth authorized domain added.
