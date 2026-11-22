@@ -430,3 +430,30 @@ Live on 2026-11-22 (approved by András): `main` fast-forwarded to `b5b001a`. Ch
 landing page (still `X-Robots-Tag: noindex`), `landing.css` and the new `games.css` served, all seven WebP images
 200 `image/webp`; at 375 px no horizontal overflow; the code box sends "abc 234" to `/play`, which shows ABC234 in
 its code field. Not tried: a real phone.
+
+## F6 – Hub product and launch, part 1 (2026-11-22)
+
+Decisions (András): the Hub's "Open app" goes to the root (signed in on the Hub: one click into /teacher, signed
+out: the landing page); Claude fills the Hub product as a draft and András publishes it; at launch only the landing
+page is indexed; the end-to-end test is run with a new teacher account that András creates (Claude guides).
+
+**Built**
+- `public/index.html`: a head script forwards `#sso=<code>` to `/teacher` (where `takeSsoCode` redeems it), as
+  Hubbaloo's landing page does. Signed-out visitors stay on the landing page.
+- Indexing: the landing page has no `noindex` any more; `_headers` sends `X-Robots-Tag: noindex` only for
+  `/teacher*`, `/play*` and `/dev/*` (those pages keep their `noindex` meta too); `robots.txt` (disallows the same,
+  points to the sitemap), `sitemap.xml` (the landing page).
+- Cover 1200x630 (`public/og-image.png`, from `public/dev/cover.html` with headless Chrome): the landing page's
+  `og:image` and `twitter:card`, and the Hub product cover.
+- Landing screenshots with English definitions as clues (Memory, Hangman, Drowning showed Hungarian translations;
+  András: not good on an international page); the teacher's view sample shows English definitions too.
+- Hub admin (Claude in Chrome, András's admin session): product **WordNerd** saved as **draft**: slug `wordnerd`,
+  type App, billing Subscription, price 0 (as Hubbaloo), `appUrl https://wordnerd.mrandrewshub.com`, tagline,
+  markdown description, cover uploaded (Storage, WebP), tags `vocabulary, games, English, A1–C1`, audience teachers.
+
+**Verified**: locally `/#sso=…` lands on `/teacher` with the code taken off the address (a made-up code fails to
+redeem, the sign-in screen shows); `npm test` 73 pass; the build contains `robots.txt`, `sitemap.xml`,
+`og-image.png`; the draft's saved fields read back from the admin form.
+
+**Order for going live**: push `main` first (the SSO forwarding must be on the site before the card links to it),
+then András publishes the product, then the end-to-end test.
