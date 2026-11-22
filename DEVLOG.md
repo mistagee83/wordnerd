@@ -359,3 +359,37 @@ and a save, opens folded again from My lists and from another list; no horizonta
 
 Live on 2026-11-22 (approved by András): `main` fast-forwarded to `a9a39ee`; Pages served the new `teacher.js`
 (list picker, folded words) and `app.css` within a minute. Front end only, no functions deploy needed.
+
+## F5 – Monitor and History (2026-11-22)
+
+Decisions (András): hardest words as a list under the students table; Results tab = History; without a Hub pass a
+closed room is deleted 30 days after closing; the monitor refreshes every 5 s through the callable (no rules change).
+
+**Built**
+- `engines/rooms/rooms.js`: `wordStats` (hardest words from first-try misses, once per student, hardest first),
+  `cleanupAction` and `RETENTION_DAYS` (30); 2 new unit tests.
+- Teacher room view: "Live" badge, 5 s refresh, **Hardest words** (word, translation, "n / m students", top 10 and
+  "Show all", "Nobody missed the other … words"). The Refresh button is gone (it refreshes by itself).
+- Rooms tab: open rooms only (+ "n closed rooms: see Results"). Results tab: the History of closed rooms (Hub pass;
+  without it the count, the 30-day note and a link to the Hub pass). A closed room's view is under Results
+  (tab and back link); closing a room goes to Results.
+- `wnCleanup` (scheduled daily 03:30 Europe/Budapest): closes expired rooms (code freed), deletes closed rooms
+  after 30 days with players, nickname locks and code, unless the owner has a Hub pass. `wnDevCleanup` (emulator
+  only) runs it at a chosen time.
+- Fixed on the way: on a phone the dashboard's single grid column was `1fr`, so a wide students table (7 games)
+  stretched the whole page beyond 375 px; now `minmax(0, 1fr)` and the table scrolls inside its frame.
+
+**Verified**
+- `npm test` 73 pass; `npm run test:emulator` 16 checks (new: expiry closes the room and frees the code; with the
+  Hub pass nothing is deleted at +100 days; without it the room closed at t0 is deleted at +36 days with players,
+  names and code, the one closed at +7 days stays).
+- Browser against the emulators (375 px and desktop): a room with 6 students (5 played): table with stars, hardest
+  words correct ("get on with 3 / 4"); a new student's result showed up by itself within 5 s, scroll position kept;
+  closing went to Results (no Hub pass: count and note); with a Hub pass Results lists the room, it opens under the
+  Results tab, no Live badge, hardest words shown; Rooms shows "1 closed room: see Results"; no overflow at 375 px.
+
+**Not verified**: "Show all" with more than 10 missed words (logic only); the scheduled trigger itself (only the
+same code through `wnDevCleanup`); a real class.
+
+**Deploy needs**: `functions:wordnerd` (new `wnCleanup`, a Cloud Scheduler job in mrashub; Hubbaloo already has
+one) and `main`.

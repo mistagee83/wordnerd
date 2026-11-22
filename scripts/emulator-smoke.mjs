@@ -207,6 +207,29 @@ await setDoc(`users/${teacher.uid}`, { email: 'teacher@example.com', entitlement
 assert.equal((await call(teacher.token, { roomId }, 'wnGetRoom')).result.room.status, 'closed');
 ok('closing: no more results or joins; the closed room (History) opens only with the Hub pass');
 
+// 15. the daily clean-up (F5): expired rooms close; closed rooms go 30 days after closing without a Hub pass
+const DAY = 24 * 3600 * 1000;
+const room2 = (await call(teacher.token, { listId, games: games.slice(0, 2), title: 'Clean-up test' }, 'wnCreateRoom')).result;
+await call(kid2.token, { code: room2.code, nickname: 'Dan' }, 'wnJoinRoom');
+const t0 = Date.now();
+assert.deepEqual((await call(teacher.token, { now: t0 + 8 * DAY }, 'wnDevCleanup')).result, { expired: 1, deleted: 0 });
+const expiredRoom = await getDoc(`wnRooms/${room2.roomId}`);
+assert.equal(expiredRoom.status, 'closed');
+assert.equal(expiredRoom.closedAt, expiredRoom.expiresAt);
+assert.equal((await getDoc(`wnCodes/${room2.code}`)).open, false);
+// with the Hub pass nothing is deleted, however old
+assert.deepEqual((await call(teacher.token, { now: t0 + 100 * DAY }, 'wnDevCleanup')).result, { expired: 0, deleted: 0 });
+// without it: the first room (closed at t0) goes at +36 days, the expired one (closed at +7 days) stays
+await setDoc(`users/${teacher.uid}`, { email: 'teacher@example.com', credits: { purchased: 10, purchasedExpiresAt: future } });
+assert.deepEqual((await call(teacher.token, { now: t0 + 36 * DAY }, 'wnDevCleanup')).result, { expired: 0, deleted: 1 });
+assert.equal(await getDoc(`wnRooms/${roomId}`), null);
+assert.deepEqual(await listDocs(`wnRooms/${roomId}/players`), []);
+assert.deepEqual(await listDocs(`wnRooms/${roomId}/names`), []);
+assert.equal(await getDoc(`wnCodes/${code}`), null);
+assert.equal((await getDoc(`wnRooms/${room2.roomId}`)).status, 'closed');
+assert.equal((await call(teacher.token, { roomId }, 'wnGetRoom')).reason, 'room');
+ok('clean-up: an expired room closes (code freed); with the Hub pass closed rooms stay; without it they go 30 days after closing, with players, names and code');
+
 assert.deepEqual((await call(teacher.token, { id: listId }, 'wnDeleteList')).result, { ok: true });
 assert.equal(await getDoc(`wnLists/${listId}`), null);
 ok('delete removes the list');

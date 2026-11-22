@@ -170,8 +170,8 @@ Local preview of all seven games with the sample list: `npm run serve`, then `/d
 | **History**: the played rooms and their results after they closed | **Hub pass** (`entitlements.wordnerd` or `entitlements.all` active) |
 
 Correction (András, 2026-11-21): the word lists are the teacher's library and always visible; only the history of
-played rooms needs the Hub pass. Room results without a Hub pass are kept for 30 days (open question), so a
-teacher who subscribes later sees earlier rooms.
+played rooms needs the Hub pass. Room results without a Hub pass are kept for 30 days after the room closed
+(decided 2026-11-22), so a teacher who subscribes within that time sees them; with a Hub pass they are kept.
 Credit prices come from the Hub's `settings/credits` (`"wordnerd/analyze"`, `"wordnerd/enrich"`); numbers are set
 by András after testing. No Stripe code in this repo; buying happens on the Hub's `/account`.
 
@@ -207,7 +207,8 @@ Codebase `wordnerd`, Node 22, 2nd gen, europe-west1, secrets in Secret Manager.
   gapfill gap becomes plain text and the other gaps are renumbered; 4–40 words. Someone else's list answers
   exactly like a missing one (`not-found` / `list`).
 - `wnDevSeed` exists only in the emulator: 50 credits and a price for the caller, for local trials.
-- Later: `enrichItem`, cleanup of expired rooms and old data.
+- `wnCleanup` (scheduled, every day 03:30 Europe/Budapest; F5) – see "Monitor and History" below.
+- Later: `enrichItem`.
 
 ### Analysis (F2)
 
@@ -260,13 +261,31 @@ Decisions (András, 2026-11-21): 1–3 stars per game and a path; a room lives u
   pass), `wnCloseRoom`, `wnJoinRoom` (same device = back in), `wnPlayRoom`, `wnSubmitResult`.
 - **Teacher**: "Open a room" in the list editor → set-up (title, games with their settings, all available games on)
   → the room view: join address, big code, QR (qrcode-generator 1.4.4 from jsDelivr, as Hubbaloo), copy link, the
-  students table with stars per game and in total (refreshes every 10 s while open), Close room. Rooms tab: open
-  rooms, and the History of closed ones (Hub pass; without it, a count and a link).
+  students table with stars per game and in total, Close room. Rooms tab: open rooms and "Start a room" (choose a
+  list, then the same set-up; 2026-11-22). The list editor's words fold away, closed by default (phone scrolling).
 - **Student**: `/play` (`play.html`, `js/play.js`, `css/play.css`), also `/play?code=…` from the QR and the join
   box on the home page. Anonymous account (own Firebase app instance), code + nickname, the path of games as numbered
   stops with stars and the total, a game, then the stars of this try, "Play again" / "Back to the path". The room is
   remembered on the device (localStorage per code), so a reload goes straight back in. A closed room shows the stars
   but no play.
+
+### Monitor and History (F5)
+
+Decisions (András, 2026-11-22): the hardest words as a list under the students table; the Results tab is the
+History; closed rooms are deleted 30 days after closing without a Hub pass; the monitor refreshes every 5 s
+through `wnGetRoom` (no client rules, nothing to change in the Hub's rules).
+
+- **Monitor** (room view): the students table and **Hardest words** refresh every 5 s while the room is open ("Live").
+  Hardest words (`wordStats` in `engines/rooms/rooms.js`): from each student's FIRST try of each game
+  (`firstMisses`), a word counts once per student; "missed by n of m" where m = students with at least one result;
+  hardest first (students, then misses, then list order); top 10, "Show all" for the rest; the games a word was
+  missed in as a tooltip.
+- **Results tab** = History: closed rooms (by the teacher or after 7 days) with the same table and hardest words;
+  Hub pass needed (without it: a count, the 30-day note and a link). A closed room's view belongs to Results.
+- **Clean-up** `wnCleanup` (daily): an open room past `expiresAt` is closed (`closedAt = expiresAt`, code freed);
+  a closed room whose `closedAt` is more than `RETENTION_DAYS` (30) ago is deleted with its players, nickname locks
+  and code, unless the owner has a Hub pass at that moment (`cleanupAction`, tested). Single-field queries only.
+  `wnDevCleanup` (emulator only) runs it at a chosen time for the emulator checks.
 
 ## 10. Brand and UI (decided 2026-11-21)
 
@@ -307,7 +326,7 @@ the price from `settings/credits`) and "Get credits" (Hub `/account`). Under 900
 bar. Views: My lists (cards), New list (paste or file, level, translation language – remembered –, number of words,
 title, focus, the price and the balance; about 30 s waiting screen), the list editor (words left, games right,
 sticky save bar, unsaved-changes guard, delete list), and a preview overlay for every game with its settings.
-Rooms and Results are placeholders until F4/F5. Locally the page uses the emulators; `?live` uses the project.
+Rooms (F4) and Results (F5) are described in section 9. Locally the page uses the emulators; `?live` uses the project.
 
 ## 11. Hosting
 
@@ -352,6 +371,6 @@ Each phase ends with a DEVLOG entry, a demo of what was built and how it was ver
   Writing Review check, QotD generate = 3 credits at $0.033) **2 credits** looks right.
 - Manually added word: fill by hand or `wordnerd/enrich` for credits.
 - Room expiry; can a closed room be reopened.
-- Retention without a Hub pass (30 days?); deleting nicknames (GDPR); the Hub's account deletion must also remove
-  WordNerd data.
+- Deleting nicknames on request (GDPR); the Hub's account deletion must also remove WordNerd data (retention
+  without a Hub pass: 30 days, decided 2026-11-22).
 - Results: narrow client writes or callable.

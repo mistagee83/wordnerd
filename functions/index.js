@@ -2,6 +2,7 @@
 // Deploy only with András's approval: firebase deploy --only functions:wordnerd
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { onCall } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineSecret } from 'firebase-functions/params';
 import { REGION } from './config.js';
 import { analyze } from './analyze.js';
@@ -33,5 +34,12 @@ export const wnJoinRoom = onCall(rooms.joinRoom);
 export const wnPlayRoom = onCall(rooms.playRoom);
 export const wnSubmitResult = onCall(rooms.submitResult);
 
+// F5: once a day, close expired rooms and delete closed ones after the retention time (no Hub pass)
+export const wnCleanup = onSchedule({ schedule: 'every day 03:30', timeZone: 'Europe/Budapest' }, async () => {
+  const res = await rooms.cleanupRooms();
+  console.log('wnCleanup', JSON.stringify(res));
+});
+
 // Emulator only: credits and a price for local end-to-end trials. Not part of a production deploy.
 export const wnDevSeed = process.env.FUNCTIONS_EMULATOR === 'true' ? onCall(lists.devSeed) : undefined;
+export const wnDevCleanup = process.env.FUNCTIONS_EMULATOR === 'true' ? onCall(rooms.devCleanup) : undefined;

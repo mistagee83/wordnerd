@@ -14,7 +14,7 @@ import { LISTS } from './analyze.js';
 import { hasAccess } from './engines/hub/entitlements.js';
 import {
   ROOM_LIMITS, ROOM_MS, codeFromBytes, normalizeCode, checkNickname, checkRoomGames, listSnapshot,
-  checkResult, mergeResult, pathSummary, isOpen,
+  checkResult, mergeResult, pathSummary, isOpen, cleanupAction, RETENTION_MS,
 } from './engines/rooms/rooms.js';
 
 export const ROOMS = 'wnRooms';
@@ -171,4 +171,47 @@ export async function submitResult(req) {
     tx.update(playerRef, { [`results.${index}`]: results[index] });
     return { stars: check.result.stars, best: results[index], path: pathSummary(r, results) };
   });
+}
+
+// ---------------------------------------------------------------------------------------------------
+// daily clean-up (F5): close rooms past their 7 days; delete closed rooms RETENTION_DAYS after closing when the
+// owner has no Hub pass (with a Hub pass they are the History and stay). Single-field queries only (no index).
+
+async function deleteRoom(ref, code) {
+  const codeRef = fs().collection(CODES).doc(code);
+  const c = await codeRef.get();
+  if (c.exists && c.get('roomId') === ref.id) await codeRef.delete();
+  await fs().recursiveDelete(ref); // the room with its players and nickname locks
+}
+
+export async function cleanupRooms(now = Date.now()) {
+  let expired = 0;
+  let deleted = 0;
+  const open = await fs().collection(ROOMS).where('status', '==', 'open').get();
+  for (const d of open.docs) {
+    if (cleanupAction(d.data(), now, false) !== 'expire') continue;
+    const codeRef = fs().collection(CODES).doc(d.get('code'));
+    await fs().runTransaction(async (tx) => {
+      const c = await tx.get(codeRef);
+      tx.update(d.ref, { status: 'closed', closedAt: d.get('expiresAt') });
+      if (c.exists && c.get('roomId') === d.id) tx.update(codeRef, { open: false });
+    });
+    expired++;
+  }
+  const old = await fs().collection(ROOMS).where('closedAt', '<', now - RETENTION_MS).get();
+  const passes = new Map();
+  for (const d of old.docs) {
+    const owner = d.get('ownerUid');
+    if (!passes.has(owner)) passes.set(owner, await hubPass(owner));
+    if (cleanupAction(d.data(), now, passes.get(owner)) !== 'delete') continue;
+    await deleteRoom(d.ref, d.get('code'));
+    deleted++;
+  }
+  return { expired, deleted };
+}
+
+// Emulator only: run the clean-up at a chosen time (for the emulator checks).
+export async function devCleanup(req) {
+  teacher(req);
+  return cleanupRooms(Number(req.data?.now) || Date.now());
 }

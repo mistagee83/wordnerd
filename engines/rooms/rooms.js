@@ -154,3 +154,55 @@ export function pathSummary(room, results = {}) {
 }
 
 export const isOpen = (room, now) => room.status === 'open' && now < room.expiresAt;
+
+// ---------------------------------------------------------------------------------------------------
+// monitor and retention (F5)
+
+/**
+ * Hardest words of a room for the teacher's monitor. A student "missed" a word when it had at least one miss in
+ * the FIRST try of any game (firstMisses: what was hard before practice). `played` = students with at least one
+ * result. Returns { played, words: [{ id, term, translation, students, misses, games: [type] }] } with only the
+ * missed words, hardest first (more students, then more misses, then list order).
+ */
+export function wordStats(room, players) {
+  const items = room.listSnapshot?.items ?? [];
+  const order = new Map(items.map((it, i) => [it.id, i]));
+  const stats = new Map();
+  let played = 0;
+  for (const p of players) {
+    const results = Object.entries(p.results ?? {});
+    if (!results.length) continue;
+    played++;
+    const missedBy = new Set();
+    for (const [index, r] of results) {
+      const type = room.games?.[index]?.type;
+      for (const [id, n] of Object.entries(r?.firstMisses ?? r?.misses ?? {})) {
+        if (!order.has(id) || !(n > 0)) continue;
+        const s = stats.get(id) ?? { students: 0, misses: 0, games: new Set() };
+        s.misses += n;
+        if (type) s.games.add(type);
+        if (!missedBy.has(id)) { missedBy.add(id); s.students++; }
+        stats.set(id, s);
+      }
+    }
+  }
+  const words = [...stats].map(([id, s]) => {
+    const it = items[order.get(id)];
+    return { id, term: it.term, translation: it.translation, students: s.students, misses: s.misses, games: [...s.games] };
+  }).sort((a, b) => b.students - a.students || b.misses - a.misses || order.get(a.id) - order.get(b.id));
+  return { played, words };
+}
+
+/** Without a Hub pass, a closed room and its results are kept this long after closing (András, 2026-11-22). */
+export const RETENTION_DAYS = 30;
+export const RETENTION_MS = RETENTION_DAYS * 24 * 3600 * 1000;
+
+/**
+ * What the daily clean-up does with a room: 'expire' (still marked open but past its 7 days: close it),
+ * 'delete' (closed more than RETENTION_DAYS ago and the owner has no Hub pass) or null (keep).
+ */
+export function cleanupAction(room, now, ownerHasPass) {
+  if (room.status === 'open') return now >= room.expiresAt ? 'expire' : null;
+  const closedAt = room.closedAt ?? room.expiresAt;
+  return !ownerHasPass && now - closedAt > RETENTION_MS ? 'delete' : null;
+}

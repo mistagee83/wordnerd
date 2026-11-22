@@ -96,3 +96,36 @@ test('path summary and open state', () => {
   assert.equal(isOpen({ status: 'closed', expiresAt: 100 }, 50), false);
   assert.equal(ROOM_MS, 7 * 24 * 3600 * 1000);
 });
+
+test('word stats: first-try misses per word, counted once per student, hardest first', async () => {
+  const { wordStats } = await import('../engines/rooms/rooms.js');
+  const room = {
+    games: [{ type: 'matching' }, { type: 'hangman' }],
+    listSnapshot: { items: [{ id: 'w01', term: 'reluctant', translation: 'vonakodó' }, { id: 'w02', term: 'commute', translation: 'ingázik' }, { id: 'w03', term: 'thrive', translation: 'boldogul' }] },
+  };
+  const players = [
+    // missed w02 in both games: one student, two misses; the best try's misses (none) do not count
+    { results: { 0: { misses: {}, firstMisses: { w02: 1 } }, 1: { misses: {}, firstMisses: { w02: 1, w01: 2 } } } },
+    { results: { 0: { misses: { w02: 3 }, firstMisses: { w02: 3 } } } },
+    { results: { 1: { misses: {} } } }, // played, missed nothing
+    { results: {} }, // joined, did not play
+    { results: { 0: { firstMisses: { w99: 1 } } } }, // unknown id ignored
+  ];
+  const s = wordStats(room, players);
+  assert.equal(s.played, 4);
+  assert.deepEqual(s.words.map((w) => [w.id, w.students, w.misses]), [['w02', 2, 5], ['w01', 1, 2]]);
+  assert.deepEqual(s.words[0].games.sort(), ['hangman', 'matching']);
+  assert.equal(s.words[1].translation, 'vonakodó');
+  assert.deepEqual(wordStats(room, []), { played: 0, words: [] });
+});
+
+test('retention: expired open rooms close; closed rooms go after 30 days without a Hub pass', async () => {
+  const { cleanupAction, RETENTION_MS } = await import('../engines/rooms/rooms.js');
+  const now = 1_000_000_000_000;
+  assert.equal(cleanupAction({ status: 'open', expiresAt: now + 1 }, now, false), null);
+  assert.equal(cleanupAction({ status: 'open', expiresAt: now }, now, true), 'expire');
+  assert.equal(cleanupAction({ status: 'closed', closedAt: now - RETENTION_MS, expiresAt: now }, now, false), null);
+  assert.equal(cleanupAction({ status: 'closed', closedAt: now - RETENTION_MS - 1, expiresAt: now }, now, false), 'delete');
+  assert.equal(cleanupAction({ status: 'closed', closedAt: now - RETENTION_MS - 1, expiresAt: now }, now, true), null); // Hub pass: kept
+  assert.equal(cleanupAction({ status: 'closed', expiresAt: now - RETENTION_MS - 1 }, now, false), 'delete'); // no closedAt: expiry counts
+});

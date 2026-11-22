@@ -17,7 +17,7 @@ import { checkInput, INPUT_LIMITS, FILE_TYPES } from '/engines/analysis/input.js
 import { LEVELS, SUPPORT_LANGS } from '/engines/analysis/languages.js';
 import { applyEdits, EDIT_LIMITS } from '/engines/lists/edit.js';
 import { GAMES, GAME_IDS, generateGame } from '/engines/games/index.js';
-import { ROOM_LIMITS } from '/engines/rooms/rooms.js';
+import { ROOM_LIMITS, RETENTION_DAYS, wordStats } from '/engines/rooms/rooms.js';
 import { starRow } from './stars.js';
 import * as memory from './games/memory.js';
 import * as matching from './games/matching.js';
@@ -189,12 +189,13 @@ async function route() {
   render();
   try {
     if (S.view === 'lists') { S.lists = (await fb.call('wnListLists', {})).lists; }
-    if (S.view === 'rooms') { const r = await fb.call('wnListRooms', {}); S.rooms = r.rooms; S.hubPass = r.hubPass; }
+    if (S.view === 'rooms' || S.view === 'results') { const r = await fb.call('wnListRooms', {}); S.rooms = r.rooms; S.hubPass = r.hubPass; }
     if (S.view === 'room' && id) {
-      if (S.room?.room.id !== id) { S.room = null; render(); }
+      if (S.room?.room.id !== id) { S.room = null; S.hardAll = false; render(); }
       S.room = await fb.call('wnGetRoom', { roomId: id });
-      // the player table refreshes itself while the room is open (the live monitor comes in F5)
-      if (S.room.room.status === 'open') roomTimer = setInterval(refreshRoom, 10000);
+      // the live monitor: the table and the hardest words refresh themselves while the room is open
+      if (S.room.room.status === 'open') roomTimer = setInterval(refreshRoom, 5000);
+      renderTabs();
     }
     if (S.view === 'list' && id) {
       if (S.list?.id !== id) { S.list = null; render(); S.list = (await fb.call('wnGetList', { id })).list; }
@@ -273,11 +274,15 @@ const icon = (name) => s('svg', { viewBox: '0 0 24 24', class: 'icon', 'aria-hid
   s('path', { d: ICONS[name], fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
 
 function tab(view, label, hash = view) {
-  const active = S.view === view || (view === 'lists' && S.view === 'list') || (view === 'rooms' && S.view === 'room');
+  const roomTab = S.room?.room.status === 'closed' ? 'results' : 'rooms';
+  const active = S.view === view || (view === 'lists' && S.view === 'list') || (S.view === 'room' && view === roomTab);
   return h('a', { href: `#${hash}`, class: `tab${active ? ' is-active' : ''}`, 'aria-current': active ? 'page' : null }, icon(view), h('span', {}, label));
 }
 
 let $namebar = null;
+let $tabsRight = null;
+// a room's tab follows its status (open: Rooms, closed: Results), known only once it has loaded
+function renderTabs() { $tabsRight?.replaceChildren(tab('rooms', 'Rooms'), tab('results', 'Results')); }
 let $panel = null;
 function dashboard() {
   $panel = h('main', { class: 'panel', id: 'panel' }, panelContent());
@@ -286,7 +291,7 @@ function dashboard() {
     h('header', { class: 'dash-top' }, h('a', { href: '#lists', class: 'dash-logo' }, h('img', { src: LOGO, alt: 'WordNerd' }))),
     h('nav', { class: 'tabs tabs-left', 'aria-label': 'Lists' }, tab('lists', 'My lists'), tab('new', 'New list')),
     $panel,
-    h('nav', { class: 'tabs tabs-right', 'aria-label': 'Rooms' }, tab('rooms', 'Rooms'), tab('results', 'Results')),
+    $tabsRight = h('nav', { class: 'tabs tabs-right', 'aria-label': 'Rooms' }, tab('rooms', 'Rooms'), tab('results', 'Results')),
     $namebar);
 }
 function renderNamebar() { if ($namebar) $namebar.replaceChildren(...namebarContent()); }
@@ -313,13 +318,9 @@ function panelContent() {
     case 'list': return listView();
     case 'rooms': return roomsView();
     case 'room': return roomView();
-    case 'results': return comingSoon('Results', 'See what each student completed, and which words were the hardest. The history of past rooms comes with the Hub pass.');
+    case 'results': return resultsView();
     default: return listsView();
   }
-}
-
-function comingSoon(title, text) {
-  return [h('h2', { class: 'panel-title' }, title), h('p', { class: 'muted' }, text)];
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -741,24 +742,62 @@ function qrBox(url) {
   return box;
 }
 
+const roomCard = (r) => h('li', {}, h('a', { href: `#room/${r.id}`, class: 'card' },
+  h('span', { class: 'card-title' }, r.title),
+  h('span', { class: 'card-meta' }, r.status === 'open' ? `Code ${fmtCode(r.code)} · ${plural(r.players, 'student')}` : `${plural(r.players, 'student')} · ${r.listTitle || plural(r.games, 'game')}`),
+  h('span', { class: 'card-date' }, r.status === 'open' ? `open until ${fmtDateTime(r.expiresAt)}` : `closed ${fmtDate(r.closedAt ?? r.expiresAt)}`)));
+
+// Rooms: the open rooms and Start a room. Closed rooms are the History on the Results tab.
 function roomsView() {
   const head = h('div', { class: 'panel-head' }, h('h2', { class: 'panel-title' }, 'Rooms'),
     h('button', { type: 'button', class: 'btn btn-primary', onclick: openListPicker }, 'Start a room'));
   if (S.rooms == null) return [head, noteLine(), errorLine(), S.error ? null : h('p', { class: 'muted' }, 'Loading your rooms…')];
   const open = S.rooms.filter((r) => r.status === 'open');
-  const closed = S.rooms.filter((r) => r.status !== 'open');
-  const card = (r) => h('li', {}, h('a', { href: `#room/${r.id}`, class: 'card' },
-    h('span', { class: 'card-title' }, r.title),
-    h('span', { class: 'card-meta' }, r.status === 'open' ? `Code ${fmtCode(r.code)} · ${plural(r.players, 'student')}` : `${plural(r.players, 'student')} · closed`),
-    h('span', { class: 'card-date' }, r.status === 'open' ? `open until ${fmtDateTime(r.expiresAt)}` : fmtDate(r.closedAt ?? r.expiresAt))));
+  const closed = S.rooms.length - open.length;
   return [head, noteLine(), errorLine(),
-    open.length ? h('ul', { class: 'cards' }, open.map(card))
+    open.length ? h('ul', { class: 'cards' }, open.map(roomCard))
       : h('div', { class: 'empty' }, h('p', {}, 'No open rooms.'), h('p', { class: 'muted' }, 'Start a room from one of your lists: the class joins with a code.')),
-    h('h3', { class: 'section-title' }, 'History'),
-    !closed.length ? h('p', { class: 'muted small' }, 'Closed rooms and their results will be here.')
-      : S.hubPass ? h('ul', { class: 'cards' }, closed.map(card))
-        : h('p', { class: 'muted' }, `${plural(closed.length, 'closed room')}. The History of closed rooms and their results comes with the Hub pass. `,
-          h('a', { href: hubAccountUrl({ returnTo: location.href.split('#')[0] }) }, 'See the Hub pass'))];
+    closed ? h('p', { class: 'muted small' }, `${plural(closed, 'closed room')}: `, h('a', { href: '#results' }, 'see Results')) : null];
+}
+
+// Results: the History of closed rooms with their tables and hardest words (Hub pass, SPEC 7)
+function resultsView() {
+  const head = h('div', { class: 'panel-head' }, h('h2', { class: 'panel-title' }, 'Results'));
+  if (S.rooms == null) return [head, noteLine(), errorLine(), S.error ? null : h('p', { class: 'muted' }, 'Loading your results…')];
+  const closed = S.rooms.filter((r) => r.status !== 'open');
+  const open = S.rooms.length - closed.length;
+  const openLine = open ? h('p', { class: 'muted small' }, `${plural(open, 'room')} still open: their live results are on `, h('a', { href: '#rooms' }, 'Rooms'), '.') : null;
+  if (!closed.length) {
+    return [head, noteLine(), errorLine(), h('div', { class: 'empty' }, h('p', {}, 'No closed rooms yet.'),
+      h('p', { class: 'muted' }, 'When you close a room, its students, stars and hardest words are kept here.')), openLine];
+  }
+  if (!S.hubPass) {
+    return [head, noteLine(), errorLine(), h('div', { class: 'empty' },
+      h('p', {}, `${plural(closed.length, 'closed room')} with results.`),
+      h('p', { class: 'muted' }, `The History of closed rooms comes with the Hub pass. Without it, results are kept for ${RETENTION_DAYS} days after a room closes, so they are there if you subscribe.`),
+      h('a', { class: 'btn btn-primary', href: hubAccountUrl({ returnTo: location.href.split('#')[0] }) }, 'See the Hub pass')), openLine];
+  }
+  return [head, noteLine(), errorLine(), h('ul', { class: 'cards' }, closed.map(roomCard)), openLine];
+}
+
+// the hardest words of a room: first-try misses (what was hard before practice), top 10 and the rest on demand
+const HARD_TOP = 10;
+function hardWords(room, players) {
+  const { played, words } = wordStats(room, players);
+  const head = h('h3', { class: 'section-title' }, 'Hardest words');
+  if (!played) return [head, h('p', { class: 'muted small' }, 'When students finish games, the words they missed show up here.')];
+  if (!words.length) return [head, h('p', { class: 'muted small' }, `Nobody missed a word on the first try (${plural(played, 'student')} played).`)];
+  const row = (w, i) => h('li', { class: 'hw' },
+    h('span', { class: 'hw-num' }, i + 1),
+    h('span', { class: 'hw-word' }, h('strong', {}, w.term), h('span', { class: 'hw-tr' }, w.translation)),
+    h('span', { class: 'hw-count', title: `In: ${w.games.map((t) => GAMES[t].meta.title).join(', ')}` }, `${w.students} / ${played}`));
+  const all = S.hardAll || words.length <= HARD_TOP;
+  const missedNot = room.listSnapshot.items.length - words.length;
+  return [head,
+    h('p', { class: 'muted small' }, `Missed on the first try: students out of the ${plural(played, 'student')} who played.`),
+    h('ol', { class: 'hw-list' }, (all ? words : words.slice(0, HARD_TOP)).map(row)),
+    all ? null : h('button', { type: 'button', class: 'btn btn-small', onclick: () => { S.hardAll = true; renderPanel(); } }, `Show all ${words.length} missed words`),
+    all && missedNot ? h('p', { class: 'muted small' }, `Nobody missed the other ${plural(missedNot, 'word')}.`) : null];
 }
 
 function roomView() {
@@ -772,9 +811,9 @@ function roomView() {
       await fb.call('wnCloseRoom', { roomId: room.id });
       clearInterval(roomTimer);
       S.rooms = null;
-      // a closed room is History (Hub pass): go back to the list, which says what happens to it
-      S.flash = S.hubPass ? 'Room closed. You find it in the History below.' : 'Room closed. Its results are kept: the History of closed rooms comes with the Hub pass.';
-      go('rooms');
+      // a closed room is History (Results tab, Hub pass)
+      S.flash = 'Room closed.'; // the Results tab says the rest (History, Hub pass, retention)
+      go('results');
     } catch (e) { S.error = reasonText(e); renderPanel(); }
   };
   const gameHead = room.games.map((g) => h('th', { scope: 'col' }, GAMES[g.type].meta.title));
@@ -787,7 +826,7 @@ function roomView() {
         h('td', { class: 'num' }, `${p.path.stars} / ${p.path.maxStars}`))))))
     : h('p', { class: 'muted' }, open ? 'Nobody has joined yet. Show the code or the QR code to your class.' : 'Nobody joined this room.');
   return [
-    h('div', { class: 'panel-head' }, h('a', { href: '#rooms', class: 'back' }, '← Rooms'),
+    h('div', { class: 'panel-head' }, h('a', { href: open ? '#rooms' : '#results', class: 'back' }, open ? '← Rooms' : '← Results'),
       open ? h('button', { type: 'button', class: 'link-btn danger', onclick: close }, 'Close room') : h('span', { class: 'muted small' }, 'Closed')),
     h('h2', { class: 'panel-title' }, room.title),
     h('p', { class: 'muted small' }, [room.listSnapshot.title, plural(room.games.length, 'game'), open ? `open until ${fmtDateTime(room.expiresAt)}` : `closed ${fmtDate(room.closedAt ?? room.expiresAt)}`].join(' · ')),
@@ -801,8 +840,9 @@ function roomView() {
         h('button', { type: 'button', class: 'btn btn-small', onclick: (e) => { navigator.clipboard?.writeText(url); e.currentTarget.textContent = 'Link copied'; } }, 'Copy the link')),
       qrBox(url)) : null,
     h('div', { class: 'panel-head' }, h('h3', { class: 'section-title' }, `Students (${players.length})`),
-      open ? h('button', { type: 'button', class: 'btn btn-small', onclick: refreshRoom }, 'Refresh') : null),
+      open ? h('span', { class: 'live', title: 'Refreshes every 5 seconds' }, 'Live') : null),
     table,
+    ...hardWords(room, players),
   ];
 }
 
