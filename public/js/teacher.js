@@ -725,6 +725,9 @@ function loadQr() {
   qrLib ??= new Promise((resolve, reject) => {
     const tag = document.createElement('script');
     tag.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+    // Subresource integrity (Hub security audit A-8): the browser runs the file only if it is exactly this version.
+    tag.integrity = 'sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k';
+    tag.crossOrigin = 'anonymous';
     tag.onload = () => resolve(window.qrcode);
     tag.onerror = () => { qrLib = null; reject(new Error('qr')); };
     document.head.append(tag);
