@@ -21,9 +21,13 @@ export function caller(req) {
   return req.auth.uid;
 }
 
-/** A teacher is any signed-in account that is not anonymous (students are anonymous). */
+/**
+ * A teacher is a signed-in account that is not anonymous (WordNerd students are anonymous) and not a Potluck
+ * student (their custom token carries the plStudent claim; Hub security audit 2026-11-22, K-2).
+ */
 export function teacher(req) {
   const uid = caller(req);
-  if (req.auth.token?.firebase?.sign_in_provider === 'anonymous') fail('permission-denied', 'teacher-only');
+  const t = req.auth.token ?? {};
+  if (t.firebase?.sign_in_provider === 'anonymous' || t.plStudent) fail('permission-denied', 'teacher-only');
   return uid;
 }
