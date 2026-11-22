@@ -457,3 +457,8 @@ redeem, the sign-in screen shows); `npm test` 73 pass; the build contains `robot
 
 **Order for going live**: push `main` first (the SSO forwarding must be on the site before the card links to it),
 then András publishes the product, then the end-to-end test.
+
+F6 part 1 live on 2026-11-22 (approved by András): `main` fast-forwarded to `7e60adc`. Checked live: the landing page
+has the `#sso` forwarding and no `noindex` (meta or header); `/teacher`, `/play` and `/dev/*` send
+`X-Robots-Tag: noindex`; `robots.txt` and `sitemap.xml` served; `og-image.png` 200 `image/png`; the four re-taken
+screenshots are the new (English) files. Next: András publishes the Hub product, then the end-to-end test.
