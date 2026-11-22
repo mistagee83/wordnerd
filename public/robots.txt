@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /teacher
+Disallow: /play
+Disallow: /dev/
+
+Sitemap: https://wordnerd.mrandrewshub.com/sitemap.xml

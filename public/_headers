@@ -1,7 +1,14 @@
-# Cloudflare Pages headers. The whole site is noindex until the Hub lists WordNerd.
+# Cloudflare Pages headers. Since the launch (F6, 2026-11-22) only the landing page is indexed; the app pages,
+# the developer tools and the game screenshots' folder stay out of search (robots.txt says the same).
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+
+/teacher*
+  X-Robots-Tag: noindex
+/play*
+  X-Robots-Tag: noindex
+/dev/*
   X-Robots-Tag: noindex
 
 /*.html

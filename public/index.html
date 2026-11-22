@@ -3,10 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    // The Hub's "Open app" (signed in on the Hub) opens this address with a one-time code: the code goes on to
+    // the teacher page, which signs the teacher in. Signed-out visitors stay on the landing page.
+    if (/^#sso=/.test(location.hash)) location.replace('/teacher' + location.hash);
+  </script>
   <title>WordNerd: vocabulary games from any text</title>
   <meta name="description" content="Paste a reading text or snap a coursebook page. WordNerd picks the words worth learning and builds seven vocabulary games your class plays on their phones with a code.">
-  <!-- noindex until the Hub lists WordNerd (SPEC 11); _headers sends X-Robots-Tag too -->
-  <meta name="robots" content="noindex">
   <link rel="canonical" href="https://wordnerd.mrandrewshub.com/">
   <meta name="theme-color" content="#2b231b">
   <meta property="og:type" content="website">
@@ -14,7 +17,11 @@
   <meta property="og:url" content="https://wordnerd.mrandrewshub.com/">
   <meta property="og:title" content="WordNerd: vocabulary games from any text">
   <meta property="og:description" content="Paste a reading text or snap a coursebook page. WordNerd picks the words worth learning and builds seven vocabulary games your class plays on their phones.">
-  <meta property="og:image" content="https://wordnerd.mrandrewshub.com/img/landing/wordsearch.webp">
+  <meta property="og:image" content="https://wordnerd.mrandrewshub.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The WordNerd logo next to two phones with a word search and a hangman game">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/img/brand/WordNerd_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
