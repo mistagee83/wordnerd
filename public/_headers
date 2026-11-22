@@ -1,8 +1,11 @@
 # Cloudflare Pages headers. Since the launch (F6, 2026-11-22) only the landing page is indexed; the app pages,
 # the developer tools and the game screenshots' folder stay out of search (robots.txt says the same).
+# Hub security audit 2026-11-22, K-6: other sites cannot put these pages in a frame (clickjacking).
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self'
 
 /teacher*
   X-Robots-Tag: noindex
