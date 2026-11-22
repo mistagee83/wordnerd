@@ -339,3 +339,20 @@ game, every 15 s on the path and during a game, and when the page comes back to 
 game and says "Your teacher closed the room…"; a result refused with `room-closed` says it could not be saved.
 Checked against the emulators: closing while a student plays Drowning stopped the game after about 7 s with the
 message, and the path's buttons were disabled.
+
+## Rooms are started from the Rooms tab; the word list folds away (2026-11-22)
+
+András's feedback before F5: on a phone the list page needed a lot of scrolling to reach "Open a room", and starting
+a room belongs on the Rooms tab.
+- List editor: the words are a folded section ("Words (n) · check and edit"), closed whenever a list is opened;
+  it stays open while editing (deleting, adding, saving re-render the panel) and opens by itself on a row error.
+  The "Open a room" button under the games stays.
+- Rooms tab: a "Start a room" button in the header opens a list picker (always a fresh list of the teacher's
+  lists; "New list" when there are none); choosing a list opens the same room set-up as from the list editor.
+- Fixed on the way: a folded/unfolded `<details>` fires its `toggle` event late, also after the panel was
+  replaced, which turned the stored state back; only a connected element updates it now.
+
+**Verified** (emulators, built-in browser, 375 px and desktop): picker lists both test lists; choosing one opens
+the set-up, "Open the room" opens the room with code and QR; the list opens folded, stays open through a delete
+and a save, opens folded again from My lists and from another list; no horizontal overflow at 375 px; `npm test`
+71 pass. **Not verified**: a real phone.

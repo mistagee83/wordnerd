@@ -181,7 +181,9 @@ async function route() {
   }
   // a note set just before navigating ("Your list is ready.") survives this one route change
   S.error = ''; S.note = S.flash ?? ''; S.flash = null; S.rowError = null;
-  S.view = ['lists', 'new', 'list', 'rooms', 'room', 'results'].includes(view) ? view : 'lists';
+  const nextView = ['lists', 'new', 'list', 'rooms', 'room', 'results'].includes(view) ? view : 'lists';
+  if (nextView === 'list' && (S.view !== 'list' || S.list?.id !== id)) S.wordsOpen = false; // a list opens with its words folded
+  S.view = nextView;
   clearInterval(roomTimer);
   if (S.view !== 'room') S.room = null;
   render();
@@ -544,7 +546,10 @@ function listView() {
     h('button', { type: 'button', class: 'btn btn-ghost btn-small', onclick: () => { S.draft = draftOf(S.list); S.dirty = false; S.rowError = null; S.error = ''; renderPanel(); } }, 'Discard'),
     h('button', { type: 'button', class: 'btn btn-primary btn-small', disabled: S.busy, onclick: saveList }, S.busy ? 'Saving…' : 'Save'));
 
-  const words = h('section', { class: 'words', 'aria-label': 'Words' },
+  // the words are folded away by default (a long list is a lot of scrolling on a phone); an error opens them
+  if (S.rowError) S.wordsOpen = true;
+  const words = h('details', { class: 'words', open: S.wordsOpen, ontoggle: (e) => { if (e.currentTarget.isConnected) S.wordsOpen = e.currentTarget.open; } },
+    h('summary', { class: 'words-summary' }, h('span', { class: 'words-count' }, `Words (${D.items.length})`), h('span', { class: 'words-hint' }, 'check and edit')),
     h('div', { class: 'words-head' }, h('span', {}, 'Word'), h('span', {}, `Translation (${langName(L.supportLang)})`)),
     h('ol', { class: 'word-list' }, rows),
     h('button', { type: 'button', class: 'btn btn-small', disabled: D.items.length >= EDIT_LIMITS.maxItems, onclick: () => {
@@ -623,9 +628,8 @@ async function refreshRoom() {
 }
 
 // the room set-up: which games, their settings, a title; every available game is on by default
-function openRoomSetup() {
+function openRoomSetup(L = S.list) {
   closeOverlay();
-  const L = S.list;
   const picks = GAME_IDS.map((type) => {
     const test = generateGame(type, L, {}, 'check');
     return { type, on: test.ok, ok: test.ok, reason: test.reason, settings: { ...GAMES[type].defaults } };
@@ -665,6 +669,50 @@ function openRoomSetup() {
   document.addEventListener('keydown', escClose);
 }
 
+// Start a room from the Rooms tab: choose the list first, then the same set-up as from the list editor
+async function openListPicker() {
+  closeOverlay();
+  const body = h('div', { class: 'lp-body' }, h('p', { class: 'muted' }, 'Loading your lists…'));
+  $overlay = h('div', { class: 'overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Start a room', onclick: (e) => { if (e.target === $overlay) closeOverlay(); } },
+    h('div', { class: 'pv rs' },
+      h('div', { class: 'pv-head' }, h('h3', {}, 'Start a room'), h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Close', onclick: closeOverlay }, '×')),
+      h('p', { class: 'muted small' }, 'Which list should the class practise?'),
+      body));
+  const mine = $overlay;
+  document.body.append($overlay);
+  document.addEventListener('keydown', escClose);
+  try {
+    S.lists = (await fb.call('wnListLists', {})).lists; // always fresh: a list may be new since the last look
+  } catch (err) {
+    if ($overlay === mine) body.replaceChildren(h('p', { class: 'msg msg-error', role: 'alert' }, reasonText(err)));
+    return;
+  }
+  if ($overlay !== mine) return; // closed meanwhile
+  if (!S.lists.length) {
+    body.replaceChildren(h('p', {}, 'No lists yet. Make a list first: the room is built from it.'),
+      h('p', { class: 'rs-actions' }, h('a', { href: '#new', class: 'btn btn-primary', onclick: closeOverlay }, 'New list')));
+    return;
+  }
+  const err = h('p', { class: 'msg msg-error', hidden: true, role: 'alert' });
+  const pick = async (e, id) => {
+    const btn = e.currentTarget;
+    body.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+    btn.classList.add('is-busy');
+    try {
+      const { list } = await fb.call('wnGetList', { id });
+      if ($overlay === mine) openRoomSetup(list);
+    } catch (ex) {
+      err.textContent = reasonText(ex); err.hidden = false;
+      body.querySelectorAll('button').forEach((b) => { b.disabled = false; });
+      btn.classList.remove('is-busy');
+    }
+  };
+  body.replaceChildren(err, h('ul', { class: 'rs-list' }, S.lists.map((l) => h('li', {},
+    h('button', { type: 'button', class: 'game-btn', onclick: (e) => pick(e, l.id) },
+      h('span', { class: 'game-name' }, l.title),
+      h('span', { class: 'game-blurb' }, [l.level, plural(l.words, 'word'), `→ ${langName(l.supportLang)}`, fmtDate(l.createdAt)].filter(Boolean).join(' · ')))))));
+}
+
 const joinUrl = (code) => `${publicBaseUrl()}/play?code=${code}`;
 const fmtCode = (code) => `${code.slice(0, 3)} ${code.slice(3)}`;
 const fmtDateTime = (ms) => (ms ? new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
@@ -694,7 +742,8 @@ function qrBox(url) {
 }
 
 function roomsView() {
-  const head = h('div', { class: 'panel-head' }, h('h2', { class: 'panel-title' }, 'Rooms'));
+  const head = h('div', { class: 'panel-head' }, h('h2', { class: 'panel-title' }, 'Rooms'),
+    h('button', { type: 'button', class: 'btn btn-primary', onclick: openListPicker }, 'Start a room'));
   if (S.rooms == null) return [head, noteLine(), errorLine(), S.error ? null : h('p', { class: 'muted' }, 'Loading your rooms…')];
   const open = S.rooms.filter((r) => r.status === 'open');
   const closed = S.rooms.filter((r) => r.status !== 'open');
@@ -704,7 +753,7 @@ function roomsView() {
     h('span', { class: 'card-date' }, r.status === 'open' ? `open until ${fmtDateTime(r.expiresAt)}` : fmtDate(r.closedAt ?? r.expiresAt))));
   return [head, noteLine(), errorLine(),
     open.length ? h('ul', { class: 'cards' }, open.map(card))
-      : h('div', { class: 'empty' }, h('p', {}, 'No open rooms.'), h('p', { class: 'muted' }, 'Open a room from one of your lists: the class joins with a code.'), h('a', { href: '#lists', class: 'btn btn-primary' }, 'My lists')),
+      : h('div', { class: 'empty' }, h('p', {}, 'No open rooms.'), h('p', { class: 'muted' }, 'Start a room from one of your lists: the class joins with a code.')),
     h('h3', { class: 'section-title' }, 'History'),
     !closed.length ? h('p', { class: 'muted small' }, 'Closed rooms and their results will be here.')
       : S.hubPass ? h('ul', { class: 'cards' }, closed.map(card))
