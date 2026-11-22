@@ -1,0 +1,14 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>phone frame</title>
+<!-- Developer tool: shows ?src= in a 390 px wide iframe of height ?h=, for full-page phone screenshots with
+     headless Chrome (which will not make a window narrower than ~500 px on Windows). -->
+<style>body { margin: 0; background: #1f1913; } iframe { display: block; width: 390px; border: 0; }</style>
+<iframe id="f" title="page"></iframe>
+<script>
+  const q = new URLSearchParams(location.search);
+  const f = document.getElementById('f');
+  f.style.height = `${Number(q.get('h')) || 800}px`;
+  f.src = q.get('src') || '/';
+</script>

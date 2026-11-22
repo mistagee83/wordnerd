@@ -404,3 +404,24 @@ one) and `main`.
   `sign-in`.
 - Not tried live: the monitor with real students (needs András's account) and the first scheduled run (tonight; check
   its `wnCleanup {"expired":…,"deleted":…}` log line). The job was not run by hand, so no live room was touched.
+
+## Landing page (2026-11-22, before F6)
+
+András asked for a real landing page before F6 (the home page was a placeholder: logo, one line, join box).
+- `public/index.html` + `css/landing.css`, in the dashboard's look: the students' code box first (students who
+  type the address are on phones), hero (headline, "Try it free", phones with two games), how it works (4 steps),
+  the seven games with screenshots, "See what was hard" (the teacher's view drawn in HTML), features, what it costs
+  (free / credits: 2 per list, 20 on sign-up / Hub pass: History), questions, closing call. Still `noindex`.
+  Facts checked against the code and the live `settings/credits` (analyze = 2, signupBonus = 20).
+- Screenshots: `scripts/shots.mjs` (needs `npm run serve`) takes them with the local Chrome in headless mode from
+  `public/dev/shot.html` (one game with the sample list, a few moves played), in a 390 px iframe because headless
+  Chrome on Windows will not make a window narrower than ~500 px; converted to WebP in the same Chrome
+  (`dev/webp.html`). 7 images, 356 KB. `dev/phone.html` frames any page at 390 px for full-page phone shots.
+- **Fixed on the way (student games on phones)**: Hangman's column grew to ~510 px on a phone (the keyboard's
+  `auto-fill` grid counts its max-width as its minimum), so letters were cut off; Drowning's answer field stuck out
+  by ~12 px. Both columns are `minmax(0, 1fr)` now, the field may shrink; the Hangman word stays on one line (slots
+  shrink) and the balloon scene is centred. All seven games checked at 390 and 360 px without overflow.
+
+**Verified**: browser at 375 px and 1280 px, no horizontal overflow; full-page headless shots of both;
+`npm test` 73 pass; `build:web` copies the images. **Not verified**: a real phone; the join box submits to
+`/play?code=` as before (same form, not re-tested).

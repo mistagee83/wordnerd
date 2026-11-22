@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>webp</title>
+<!-- Developer tool for scripts/shots.mjs: draws ?src=<image> on a canvas and writes it as a WebP data URL into
+     #out (read with headless Chrome's --dump-dom). ?w= scales it to that width. -->
+<pre id="out"></pre>
+<script>
+  const q = new URLSearchParams(location.search);
+  const img = new Image();
+  img.onload = () => {
+    const w = Number(q.get('w')) || img.naturalWidth;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = Math.round(img.naturalHeight * w / img.naturalWidth);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    document.getElementById('out').textContent = c.toDataURL('image/webp', Number(q.get('q')) || 0.82);
+  };
+  img.src = q.get('src');
+</script>

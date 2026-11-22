@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WordNerd game shot</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Luckiest+Guy&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/games.css">
+  <link rel="stylesheet" href="/css/play.css">
+  <style>
+    /* Developer tool: one game on the student page's background, for the landing page's screenshots
+       (scripts/shots.mjs takes them with headless Chrome). ?game=<id>&stage=1
+       Headless Chrome on Windows will not make a window narrower than ~500 px, and the games size themselves
+       by the viewport (vw, media queries); so the page shows itself in a 390 px iframe, a real phone viewport. */
+    body { margin: 0; }
+    #game { padding: 14px 12px; }
+    .frame { display: block; width: 390px; height: 100vh; border: 0; }
+  </style>
+</head>
+<body class="play">
+  <main id="game"></main>
+  <script>
+    if (!new URLSearchParams(location.search).has('inner')) {
+      document.getElementById('game').outerHTML = `<iframe class="frame" title="game" src="${location.pathname}${location.search}&inner=1"></iframe>`;
+    } else {
+      const s = document.createElement('script'); s.type = 'module'; s.src = '/dev/shot.js'; document.body.append(s);
+    }
+  </script>
+</body>
+</html>

@@ -148,9 +148,9 @@
 .cw-clues li { margin-bottom: 4px; }
 
 /* ---------- hangman (balloons) ---------- */
-.hm-layout { display: grid; grid-template-columns: minmax(180px, 300px) 1fr; gap: 20px; align-items: start; }
-@media (max-width: 640px) { .hm-layout { grid-template-columns: 1fr; } .hm-scene { max-width: 240px; margin: 0 auto; } }
-.hm-scene { width: 100%; height: auto; overflow: visible; }
+.hm-layout { display: grid; grid-template-columns: minmax(180px, 300px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 640px) { .hm-layout { grid-template-columns: minmax(0, 1fr); } .hm-scene { max-width: 240px; margin: 0 auto; } }
+.hm-scene { display: block; width: 100%; height: auto; overflow: visible; }
 .hm-bunch { transition: transform .6s cubic-bezier(.3,.7,.4,1); }
 .hm-string { stroke: #d8c7a8; stroke-width: 1.2; }
 .hm-balloon { animation: hm-bob 3s ease-in-out infinite; animation-delay: var(--d); transform-box: view-box; }
@@ -168,12 +168,13 @@
 .hm-word.is-solved .hm-slot { color: var(--c-ok); border-bottom-color: var(--c-ok); }
 .hm-clue { margin: 0 0 8px; color: var(--c-text-muted); }
 .hm-clue::before { content: 'Clue: '; color: var(--c-accent); }
-.hm-word { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 18px; }
+/* the word stays on one line: the slots shrink on a narrow phone (a 14-letter phrase at 360 px) */
+.hm-word { display: flex; gap: clamp(3px, 1vw, 6px); margin: 10px 0 18px; }
 .hm-slot {
-  width: 1.6em; height: 1.9em; display: grid; place-items: center; font: 600 1.5rem var(--wn-font-body);
+  flex: 0 1 1.6em; min-width: 0; height: 1.9em; display: grid; place-items: center; font: 600 clamp(1.05rem, 5.5vw, 1.5rem) var(--wn-font-body);
   border-bottom: 3px solid var(--c-accent); color: var(--c-text);
 }
-.hm-slot.is-fixed { border-bottom-color: transparent; width: .8em; }
+.hm-slot.is-fixed { border-bottom-color: transparent; flex-basis: .8em; }
 .hm-slot.is-reveal { color: #ff8a8a; }
 .hm-keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 5px; max-width: 520px; }
 .hm-key {
@@ -205,8 +206,8 @@
 .g-gapfill.is-checked .gf-text { line-height: 2.9; }
 
 /* ---------- drowning (telephone box) ---------- */
-.dr-layout { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 24px; align-items: center; }
-@media (max-width: 560px) { .dr-layout { grid-template-columns: 120px 1fr; gap: 14px; } }
+.dr-layout { display: grid; grid-template-columns: minmax(140px, 220px) minmax(0, 1fr); gap: 24px; align-items: center; }
+@media (max-width: 560px) { .dr-layout { grid-template-columns: 120px minmax(0, 1fr); gap: 14px; } }
 .dr-box { width: 100%; height: auto; filter: drop-shadow(0 6px 0 rgb(0 0 0 / .3)); }
 .dr-level { transition: transform .25s linear; }
 .dr-wave { animation: dr-wave 2.4s linear infinite; }
@@ -221,7 +222,7 @@
 .dr-prompt { font: 600 clamp(1.3rem, 4.5vw, 1.9rem) var(--wn-font-body); color: var(--c-accent); margin: 0 0 14px; min-height: 1.3em; }
 .dr-prompt.is-new { animation: g-pop .3s ease; }
 .dr-form { display: flex; gap: 8px; flex-wrap: wrap; }
-.dr-input { flex: 1 1 160px; font-size: 1.15rem; padding: 10px 14px; }
+.dr-input { flex: 1 1 160px; min-width: 0; font-size: 1.15rem; padding: 10px 14px; }
 .dr-input.is-wrong { border-color: var(--c-error); }
 .dr-actions { display: flex; gap: 8px; }
 
