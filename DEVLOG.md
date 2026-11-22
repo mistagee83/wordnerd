@@ -425,3 +425,8 @@ András asked for a real landing page before F6 (the home page was a placeholder
 **Verified**: browser at 375 px and 1280 px, no horizontal overflow; full-page headless shots of both;
 `npm test` 73 pass; `build:web` copies the images. **Not verified**: a real phone; the join box submits to
 `/play?code=` as before (same form, not re-tested).
+
+Live on 2026-11-22 (approved by András): `main` fast-forwarded to `b5b001a`. Checked live: the home page is the
+landing page (still `X-Robots-Tag: noindex`), `landing.css` and the new `games.css` served, all seven WebP images
+200 `image/webp`; at 375 px no horizontal overflow; the code box sends "abc 234" to `/play`, which shows ABC234 in
+its code field. Not tried: a real phone.
