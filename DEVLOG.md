@@ -356,3 +356,6 @@ a room belongs on the Rooms tab.
 the set-up, "Open the room" opens the room with code and QR; the list opens folded, stays open through a delete
 and a save, opens folded again from My lists and from another list; no horizontal overflow at 375 px; `npm test`
 71 pass. **Not verified**: a real phone.
+
+Live on 2026-11-22 (approved by András): `main` fast-forwarded to `a9a39ee`; Pages served the new `teacher.js`
+(list picker, folded words) and `app.css` within a minute. Front end only, no functions deploy needed.
