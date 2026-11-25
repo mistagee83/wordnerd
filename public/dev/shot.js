@@ -63,6 +63,13 @@ const STAGE = {
     const answer = puzzle.queue[0].answer;
     if (input) input.value = answer.slice(0, Math.ceil(answer.length / 2));
   },
+  async bridge() {
+    // three planks laid, the walker on the third, the fourth sentence waiting
+    for (const e of puzzle.queue.slice(0, 3)) {
+      [...root.querySelectorAll('.br-opt')].find((b) => b.textContent === e.answer)?.click();
+      await wait(1100);
+    }
+  },
   async hangman() {
     const word = puzzle.rounds[0].slots.filter((s) => s.letter).map((s) => s.letter);
     const press = (k) => [...root.querySelectorAll('.hm-key')].find((b) => b.textContent === k && !b.disabled)?.click();

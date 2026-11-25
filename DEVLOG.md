@@ -583,3 +583,12 @@ reached after Bridge, confetti, the monitor says "Class goal reached".
 **Not verified**: a real phone; several students at once (the total is a Firestore increment in the result's
 transaction). **Going live needs both**: `firebase deploy --only functions:wordnerd` (stars, eight games, class
 goal, and the analysis prompt v5 from earlier today), then `main`.
+
+## Texts for the new line-up (2026-11-25)
+
+András: every text must follow the new line-up. Landing page: meta and og descriptions "eight games"; hero
+(screenshots, eight games); step 1 (up to four pages, PDFs, photos or pasted screenshots); step 2 (the longer the
+text, the more words, up to 40); step 3 (optional class goal); "Eight games from one list" with a Bridge card and
+screenshot (`scripts/shots.mjs bridge`, 390×440); a "A goal for the whole class" feature. Cover (`og-image.png`)
+re-taken from `dev/cover.html` ("Eight games"). No "seven games" left in `public/` or `scripts/` (only "seven
+days"). The Hub product text (tagline, description) says seven games: updated in the Hub admin after the deploy.

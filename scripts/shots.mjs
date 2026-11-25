@@ -1,4 +1,4 @@
-// Screenshots of the seven games for the landing page, taken with the local Chrome in headless mode
+// Screenshots of the eight games for the landing page, taken with the local Chrome in headless mode
 // (no dependency). Needs the dev server: `npm run serve`, then `node scripts/shots.mjs [game…]`.
 // Output: public/img/landing/<game>.webp, a phone-sized view (390 px wide, 2x pixels), via a PNG that is
 // converted in the same headless Chrome (public/dev/webp.html) and then removed.
@@ -21,7 +21,7 @@ if (!CHROME) throw new Error('No Chrome found: set CHROME to its path.');
 
 const BASE = process.env.BASE || 'http://localhost:5174';
 // height per game: enough for the board, not the empty page under it
-const SHOTS = { memory: 560, matching: 620, wordsearch: 620, crossword: 600, hangman: 640, gapfill: 640, drowning: 600 };
+const SHOTS = { memory: 560, matching: 620, wordsearch: 620, crossword: 600, hangman: 640, gapfill: 640, drowning: 600, bridge: 440 };
 const games = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(SHOTS);
 for (const game of games) {
   const file = join(out, `${game}.png`);
