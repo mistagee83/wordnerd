@@ -17,7 +17,7 @@ export const MAX_ATTEMPTS = 2; // one retry after a broken or unusable answer
  */
 export async function runAnalysis(input, { spend, refund, model, save, log = () => {}, now = () => Date.now() }) {
   const { ledgerId, cost } = await spend();
-  const prompt = buildPrompt({ ...input, material: input.kind === 'text' ? input.text : '', fileCount: input.files?.length ?? 0 });
+  const prompt = buildPrompt({ ...input, material: input.kind === 'text' ? input.text : '', fileCount: input.files?.length ?? 0, wordCount: input.source?.wordCount ?? null });
   let last = { reason: 'bad_output' };
   try {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

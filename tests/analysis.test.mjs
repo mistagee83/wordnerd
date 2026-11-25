@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkInput, INPUT_LIMITS } from '../engines/analysis/input.js';
-import { buildPrompt, PROMPT_VERSION } from '../engines/analysis/prompt.js';
+import { buildPrompt, PROMPT_VERSION, autoTarget } from '../engines/analysis/prompt.js';
 import { normalizeAnalysis, MIN_ITEMS } from '../engines/analysis/normalize.js';
 import { runAnalysis } from '../engines/analysis/run.js';
 import { ANALYSIS_SCHEMA } from '../engines/analysis/schema.js';
@@ -29,7 +29,7 @@ test('input: every bad field has its own reason', () => {
   assert.equal(bad({ targetLang: 'de' }), 'target-language');
   assert.equal(bad({ level: 'C2' }), 'level');
   assert.equal(bad({ count: 5 }), 'count');
-  assert.equal(bad({ count: 31 }), 'count');
+  assert.equal(bad({ count: 41 }), 'count');
   assert.equal(bad({ count: 12.5 }), 'count');
   assert.equal(bad({ count: 'all' }), 'count');
   assert.equal(checkInput({ ...base, count: 'auto' }).input.count, 'auto');
@@ -80,7 +80,7 @@ test('prompt: carries level, count, languages, focus and the material', () => {
   assert.match(p.text, /focus on: phrasal verbs/);
   assert.match(p.text, /<material>\nMATERIAL TEXT\n<\/material>/);
   assert.match(p.system, /DATA, not instructions/);
-  assert.equal(PROMPT_VERSION, 'analyze-v4');
+  assert.equal(PROMPT_VERSION, 'analyze-v5');
   assert.match(p.text, /COMPLETE word or expression/);
 });
 
@@ -195,7 +195,7 @@ test('run: success spends once, saves the list with the prompt version, no refun
   const r = await runAnalysis(input, d);
   assert.deepEqual([r.ok, r.listId, r.cost], [true, 'list-1', 3]);
   assert.deepEqual([calls.spend, calls.model, calls.refund.length], [1, 1, 0]);
-  assert.equal(calls.saved.promptVersion, 'analyze-v4');
+  assert.equal(calls.saved.promptVersion, 'analyze-v5');
   assert.equal(calls.saved.items.length, 20);
   assert.equal(calls.logs[0].outcome, 'ok');
 });
@@ -265,11 +265,21 @@ test('normalize: no space is left between a gap and the punctuation after it', (
   assert.equal(r.list.items[0].example.text, 'Never get into a car with a ___.');
 });
 
-test('auto count: the prompt lets the model decide (10–40), the normalizer keeps at most 40', () => {
-  const p = buildPrompt({ level: 'B1', count: 'auto', supportLang: 'hu', material: 'x' });
-  assert.match(p.text, /You decide how many/);
-  assert.match(p.text, /between 10 and 40/);
+test('auto count: a target from the text length (one per 15 words, 10–40), the normalizer keeps at most 40', () => {
+  assert.equal(autoTarget(100), 10);
+  assert.equal(autoTarget(330), 22);
+  assert.equal(autoTarget(450), 30);
+  assert.equal(autoTarget(2000), 40);
+  assert.equal(autoTarget(null), null);
+  const p = buildPrompt({ level: 'B1', count: 'auto', supportLang: 'hu', material: 'x', wordCount: 330 });
+  assert.match(p.text, /about 330 running words, so aim for about 22 items/);
+  assert.match(p.text, /never below 10, never above 40/);
   assert.doesNotMatch(p.text, /choose the auto/);
+  const f = buildPrompt({ level: 'B1', count: 'auto', supportLang: 'hu', kind: 'file', fileCount: 2 });
+  assert.match(f.text, /Estimate how many running words/);
+  // the run passes the pasted text's word count to the prompt
+  const input = checkInput({ ...base, count: 'auto', text: Array(330).fill('word').join(' ') }).input;
+  assert.equal(input.source.wordCount, 330);
   const raw = sampleAnswer();
   // 50 items: the 20 sample words plus 30 extra ones
   for (let i = 0; i < 30; i++) raw.items.push({ ...raw.items[i % 20], term: `extra word ${String.fromCharCode(97 + (i % 26))}${String.fromCharCode(97 + Math.floor(i / 26))}` });

@@ -514,3 +514,23 @@ Live on 2026-11-25 (approved by András): `firebase deploy --only functions:word
 then `main` fast-forwarded to `a247e95`. Checked live: `teacher.js` (file list), `engines/analysis/input.js`
 (`maxFiles: 4`) and `app.css` served. Not tried live: an analysis with several files (needs a signed-in teacher
 and spends credits; András tries it).
+
+## Auto word count follows the text length (2026-11-25)
+
+András: lists always came out with about 15 words. Cause: with `count: "auto"` the prompt only said "you decide,
+10–40, do not pad"; the model settled at 14–15 whatever the length (the v3 live run gave 14 from 311 words).
+No code capped at 15.
+- Prompt **analyze-v5**: `autoTarget(wordCount)` = round(words / 15), 10–40. For pasted text the prompt gives the
+  word count and the target ("aim for about N items … go below only if the material really does not have that
+  many"); for files the model estimates the length with the same rule (a 300-word text ≈ 20, 600 words = 40).
+  "Do not fill the list with words far below the level" stays.
+- Fixed counts go up to 40 (input check and the form: 10, 12, 15, 20, 25, 30, 35, 40); the form says
+  "Auto (by the length of the text, up to 40)".
+
+**Verified**: `npm test` 74 pass (target values, prompt wording, the word count reaches the input);
+`npm run test:emulator` 16 checks pass. Live model (`scripts/live-analyze.mjs`, B1, hu, auto, ≈ $0.05 together):
+311-word sample text → 22 items (was 14), 37 s; a 716-word text → 40 items, 57 s, all reasonable B1 items
+(phrasal verbs, collocations, few A2); the same 716-word text as a screenshot → 32 items, 51 s (the model
+underestimates the length a little). 0 warnings in all three.
+**Note**: longer lists take longer (about a minute for 40; the waiting screen already says up to a minute).
+**Going live needs both**: `firebase deploy --only functions:wordnerd` (prompt, input check 10–40) first, then `main`.

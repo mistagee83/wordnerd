@@ -10,7 +10,7 @@ export const INPUT_LIMITS = Object.freeze({
   maxFiles: 4, // e.g. a few screenshots of the pages of one lesson (2026-11-25)
   maxTotalFileBytes: 6 * 1024 * 1024, // all files together: a callable request carries at most ~10 MB; base64 adds a third
   // a number, or 'auto': the model decides how many words are really useful, up to autoMax (decided 2026-11-21)
-  count: { min: 10, max: 30, def: 'auto', autoMax: 40 },
+  count: { min: 10, max: 40, def: 'auto', autoMax: 40 },
   focusChars: 120,
   titleChars: 80,
 });
