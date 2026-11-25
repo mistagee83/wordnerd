@@ -51,6 +51,7 @@ const S = {
   busy: false,
   room: null, // { id, title, listSnapshot, games, seed, status }
   me: null, // { nickname, results, path }
+  classGoal: null, // the class total only: { percent, stars, goal, maxStars, players, reached } or null
   game: null, // { index, startedAt, mounted, finished }
 };
 if (params.get('code')) history.replaceState(null, '', location.pathname); // keep the URL short and clean
@@ -80,6 +81,7 @@ async function openRoom(roomId) {
   const res = await fb.call('wnPlayRoom', { roomId });
   S.room = res.room;
   S.me = res.me;
+  S.classGoal = res.classGoal ?? null;
   S.view = 'path';
   render();
   watchRoom();
@@ -102,6 +104,7 @@ async function checkRoom() {
     const res = await fb.call('wnPlayRoom', { roomId: S.room.id });
     S.room.status = res.room.status;
     S.me = res.me;
+    S.classGoal = res.classGoal ?? null;
   } catch { return true; } // offline for a moment: keep playing, the result is checked when it is sent
   if (S.room.status !== 'open') { roomClosed(); return false; }
   if (S.view === 'path') render(); // fresh stars (e.g. the same student on another device)
@@ -162,6 +165,36 @@ function joinView() {
       h('button', { class: 'btn btn-primary btn-wide', disabled: S.busy }, S.busy ? 'Joining…' : 'Join')));
 }
 
+// The class goal (2026-11-25): one bar with the class total; nobody else's stars. The first time a student sees it
+// reached, a short celebration plays (remembered per room on this device).
+function classGoalBar() {
+  const g = S.classGoal;
+  if (!g || !g.goal) return null;
+  const pct = Math.min(100, Math.round((g.stars / g.goal) * 100));
+  const key = `wn.goal.${S.room.id}`;
+  let seen = false;
+  try { seen = localStorage.getItem(key) === '1'; } catch { /* private mode */ }
+  const party = g.reached && !seen;
+  if (party) { try { localStorage.setItem(key, '1'); } catch { /* ignore */ } }
+  return h('section', { class: `goal${g.reached ? ' is-reached' : ''}`, 'aria-label': 'Class goal' },
+    h('div', { class: 'goal-head' },
+      h('span', { class: 'goal-title' }, g.reached ? 'Class goal reached!' : 'Class goal'),
+      h('span', { class: 'goal-count' }, starRow(1, 1, 16), ` ${g.stars} / ${g.goal}`)),
+    h('div', { class: 'goal-track', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': g.goal, 'aria-valuenow': Math.min(g.stars, g.goal) },
+      h('div', { class: 'goal-fill', style: { width: `${pct}%` } })),
+    h('p', { class: 'goal-note' }, g.reached
+      ? 'Well done, everyone! Keep playing: every star still counts.'
+      : `Collect stars together: the class needs ${g.goal - g.stars} more.`),
+    party ? confetti() : null);
+}
+
+function confetti() {
+  const colors = ['#f8b856', '#72d90a', '#3a8fd6', '#e2702b', '#fcf4e7'];
+  return h('div', { class: 'confetti', 'aria-hidden': 'true' }, Array.from({ length: 36 }, (_, i) => h('span', {
+    style: { left: `${(i * 37) % 100}%`, background: colors[i % colors.length], '--d': `${(i % 9) * 0.12}s`, '--x': `${((i * 53) % 60) - 30}px` },
+  })));
+}
+
 function pathView() {
   const { room, me } = S;
   const p = me.path;
@@ -172,6 +205,7 @@ function pathView() {
       h('div', { class: 'p-who' }, h('span', { class: 'p-nick' }, me.nickname), h('span', { class: 'p-total' }, starRow(1, 1, 16), ` ${p.stars} / ${p.maxStars}`))),
     h('main', { class: 'p-main' },
       h('h1', { class: 'p-title' }, room.title),
+      classGoalBar(),
       closed ? h('p', { class: 'msg msg-error', role: 'alert' }, S.closedNote ?? 'This room is closed. You can still see your stars.') : h('p', { class: 'p-hint' }, `${p.done} of ${p.games.length} games done. Play them in any order. You can play again to get more stars.`),
       errorLine(),
       h('ol', { class: 'path' }, p.games.map((g) => h('li', { class: `stop${g.done ? ' is-done' : ''}` },
@@ -210,6 +244,7 @@ async function finish(index, r) {
     const res = await fb.call('wnSubmitResult', { roomId: S.room.id, index, result: { ...r, timeMs } });
     S.me.results[index] = res.best;
     S.me.path = res.path;
+    S.classGoal = res.classGoal ?? S.classGoal;
     S.game.finished = { stars: res.stars, best: res.best.stars, attempts: res.best.attempts };
   } catch (err) {
     if (err.reason === 'room-closed') { roomClosed('Your teacher closed the room, so this last result could not be saved. Your earlier stars are kept.'); return; }
@@ -234,6 +269,7 @@ function renderFinish() {
     h('div', { class: 'finish-stars' }, starRow(f.stars, 3, 46)),
     h('p', { class: 'finish-line' }, f.stars === 3 ? 'Perfect!' : f.stars === 2 ? 'Great job!' : f.stars === 1 ? 'Well done!' : 'Keep practising!'),
     better ? h('p', { class: 'p-hint' }, `Your best in this game: ${f.best} stars.`) : null,
+    S.classGoal?.goal ? h('p', { class: 'p-hint' }, S.classGoal.reached ? 'Your class reached its goal!' : `Class goal: ${S.classGoal.stars} of ${S.classGoal.goal} stars together.`) : null,
     h('p', { class: 'finish-actions' },
       h('button', { type: 'button', class: 'btn', onclick: () => playGame(S.game.index) }, 'Play again'),
       h('button', { type: 'button', class: 'btn btn-primary', onclick: backToPath }, 'Back to the path')),

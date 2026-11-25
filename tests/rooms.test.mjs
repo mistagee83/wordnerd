@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import sample from '../engines/fixtures/sample-family-b1.js';
 import {
   CODE_ALPHABET, CODE_LENGTH, codeFromBytes, normalizeCode, checkNickname, checkRoomGames, listSnapshot,
-  checkResult, starsFor, mergeResult, pathSummary, isOpen, ROOM_MS,
+  checkResult, starsFor, mergeResult, pathSummary, isOpen, ROOM_MS, checkClassGoal, classProgress, classStarsDelta,
 } from '../engines/rooms/rooms.js';
 import { GAME_IDS } from '../engines/games/index.js';
 
@@ -133,4 +133,22 @@ test('retention: expired open rooms close; closed rooms go after 30 days without
   assert.equal(cleanupAction({ status: 'closed', closedAt: now - RETENTION_MS - 1, expiresAt: now }, now, false), 'delete');
   assert.equal(cleanupAction({ status: 'closed', closedAt: now - RETENTION_MS - 1, expiresAt: now }, now, true), null); // Hub pass: kept
   assert.equal(cleanupAction({ status: 'closed', expiresAt: now - RETENTION_MS - 1 }, now, false), 'delete'); // no closedAt: expiry counts
+});
+
+test('class goal: a percentage of the stars the class can get, growing with the players', () => {
+  assert.equal(checkClassGoal(null), null);
+  assert.deepEqual(checkClassGoal({ percent: 70 }), { percent: 70 });
+  assert.deepEqual(checkClassGoal(80), { percent: 80 });
+  assert.equal(checkClassGoal({ percent: 75 }), undefined);
+  assert.equal(checkClassGoal({ percent: 0 }), undefined);
+  assert.equal(checkClassGoal({ percent: 110 }), undefined);
+  const games = [{ type: 'memory' }, { type: 'bridge' }];
+  assert.equal(classProgress({ games }), null);
+  assert.deepEqual(classProgress({ games, classGoal: { percent: 70 }, playerCount: 0 }), { percent: 70, stars: 0, goal: 0, maxStars: 0, players: 0, reached: false });
+  const p = classProgress({ games, classGoal: { percent: 70 }, playerCount: 25, classStars: 104 });
+  assert.deepEqual([p.maxStars, p.goal, p.reached], [150, 105, false]);
+  assert.equal(classProgress({ games, classGoal: { percent: 70 }, playerCount: 25, classStars: 105 }).reached, true);
+  assert.equal(classStarsDelta(null, { stars: 2 }), 2);
+  assert.equal(classStarsDelta({ stars: 2 }, { stars: 3 }), 1);
+  assert.equal(classStarsDelta({ stars: 3 }, { stars: 3 }), 0);
 });

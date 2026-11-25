@@ -17,7 +17,7 @@ import { checkInput, INPUT_LIMITS, FILE_TYPES } from '/engines/analysis/input.js
 import { LEVELS, SUPPORT_LANGS } from '/engines/analysis/languages.js';
 import { applyEdits, EDIT_LIMITS } from '/engines/lists/edit.js';
 import { GAMES, GAME_IDS, generateGame } from '/engines/games/index.js';
-import { ROOM_LIMITS, RETENTION_DAYS, wordStats } from '/engines/rooms/rooms.js';
+import { ROOM_LIMITS, RETENTION_DAYS, wordStats, CLASS_GOAL } from '/engines/rooms/rooms.js';
 import { starRow } from './stars.js';
 import * as memory from './games/memory.js';
 import * as matching from './games/matching.js';
@@ -66,6 +66,7 @@ const REASON_TEXT = {
   'unknown-word': 'The list changed meanwhile. Please reload the page.',
   'no-games': 'Choose at least one game.',
   'too-many-games': 'A room can have at most eight games.',
+  'class-goal': 'Choose a class goal between 10 and 100 percent.',
   'duplicate-game': 'Each game can be in a room once.',
   'unknown-game': 'Unknown game. Please reload the page.',
   'game-unavailable': 'One of the games cannot be built from this list.',
@@ -700,9 +701,25 @@ function openRoomSetup(L = S.list) {
     return { type, on: test.ok, ok: test.ok, reason: test.reason, settings: { ...GAMES[type].defaults } };
   });
   const title = h('input', { type: 'text', value: L.title, maxlength: ROOM_LIMITS.titleChars, 'aria-label': 'Room title' });
+  // class goal (2026-11-25): off by default; a percentage of the stars the whole class can get
+  const goal = { on: false, percent: CLASS_GOAL.def };
+  const goalNote = h('p', { class: 'muted small goal-help' });
+  const sayGoal = () => {
+    const n = picks.filter((p) => p.on).length;
+    goalNote.textContent = goal.on
+      ? `The class collects ${goal.percent}% of all the stars it can get, together. For example, with 25 students and ${n} games: ${Math.ceil(25 * n * 3 * goal.percent / 100)} of ${25 * n * 3} stars. Students see only the class total.`
+      : 'Optional: a shared target for the whole class. Students see one progress bar with the class total, never anyone else’s stars.';
+  };
+  const goalSelect = h('select', { disabled: true, 'aria-label': 'Class goal percentage', onchange: (e) => { goal.percent = Number(e.target.value); sayGoal(); } },
+    CLASS_GOAL.choices.map((v) => h('option', { value: v, selected: v === goal.percent }, `${v}% of the stars`)));
+  const goalBox = h('div', { class: 'rs-goal' },
+    h('label', { class: 'rs-pick' }, h('input', { type: 'checkbox', onchange: (e) => { goal.on = e.target.checked; goalSelect.disabled = !goal.on; sayGoal(); } }),
+      h('span', { class: 'game-name' }, 'Class goal')),
+    h('label', { class: 'field rs-goal-target' }, 'Target', goalSelect), goalNote);
+  sayGoal();
   const err = h('p', { class: 'msg msg-error', hidden: true, role: 'alert' });
   const rows = picks.map((p) => {
-    const box = h('input', { type: 'checkbox', checked: p.on, disabled: !p.ok, onchange: (e) => { p.on = e.target.checked; } });
+    const box = h('input', { type: 'checkbox', checked: p.on, disabled: !p.ok, onchange: (e) => { p.on = e.target.checked; sayGoal(); } });
     return h('li', { class: `rs-game${p.ok ? '' : ' is-off'}` },
       h('label', { class: 'rs-pick' }, box, h('span', { class: 'game-name' }, GAMES[p.type].meta.title),
         h('span', { class: 'game-blurb' }, p.ok ? GAME_BLURB[p.type] : `Not available: ${p.reason}`)),
@@ -713,7 +730,7 @@ function openRoomSetup(L = S.list) {
     if (!games.length) { err.textContent = REASON_TEXT['no-games']; err.hidden = false; return; }
     create.disabled = true; create.textContent = 'Opening…'; err.hidden = true;
     try {
-      const res = await fb.call('wnCreateRoom', { listId: L.id, games, title: title.value });
+      const res = await fb.call('wnCreateRoom', { listId: L.id, games, title: title.value, classGoal: goal.on ? { percent: goal.percent } : null });
       closeOverlay();
       S.rooms = null;
       location.hash = `room/${res.roomId}`;
@@ -728,6 +745,7 @@ function openRoomSetup(L = S.list) {
       h('p', { class: 'muted small' }, `Students play the chosen games in this order and collect up to 3 stars in each. The room stays open until you close it, at most ${ROOM_LIMITS.maxDays} days.`),
       h('label', { class: 'field' }, 'Room title', title),
       h('ul', { class: 'rs-list' }, rows),
+      goalBox,
       err,
       h('p', { class: 'rs-actions' }, h('button', { type: 'button', class: 'btn btn-ghost', onclick: closeOverlay }, 'Cancel'), create)));
   document.body.append($overlay);
@@ -867,6 +885,16 @@ function hardWords(room, players) {
     all && missedNot ? h('p', { class: 'muted small' }, `Nobody missed the other ${plural(missedNot, 'word')}.`) : null];
 }
 
+// the class goal on the monitor: the same bar the students see
+function teacherGoal(g) {
+  if (!g) return null;
+  const pct = g.goal ? Math.min(100, Math.round((g.stars / g.goal) * 100)) : 0;
+  return h('section', { class: `t-goal${g.reached ? ' is-reached' : ''}` },
+    h('div', { class: 't-goal-head' }, h('strong', {}, g.reached ? 'Class goal reached' : `Class goal: ${g.percent}% of the stars`),
+      h('span', {}, g.goal ? `${g.stars} / ${g.goal} stars` : 'starts when students join')),
+    h('div', { class: 't-goal-track' }, h('div', { class: 't-goal-fill', style: { width: `${pct}%` } })));
+}
+
 function roomView() {
   if (!S.room) return [h('h2', { class: 'panel-title' }, 'Room'), errorLine(), S.error ? null : h('p', { class: 'muted' }, 'Opening the room…')];
   const { room, players } = S.room;
@@ -906,6 +934,7 @@ function roomView() {
         h('p', { class: 'join-code' }, fmtCode(room.code)),
         h('button', { type: 'button', class: 'btn btn-small', onclick: (e) => { navigator.clipboard?.writeText(url); e.currentTarget.textContent = 'Link copied'; } }, 'Copy the link')),
       qrBox(url)) : null,
+    teacherGoal(room.classProgress),
     h('div', { class: 'panel-head' }, h('h3', { class: 'section-title' }, `Students (${players.length})`),
       open ? h('span', { class: 'live', title: 'Refreshes every 5 seconds' }, 'Live') : null),
     table,

@@ -1,11 +1,11 @@
 // Rooms (F4). Only these functions touch wnRooms and wnCodes (no client rules needed; the Hubbaloo pattern).
-// Teacher:  wnCreateRoom { listId, games, title? } -> { roomId, code }
+// Teacher:  wnCreateRoom { listId, games, title?, classGoal? { percent } } -> { roomId, code }
 //           wnListRooms -> { rooms: [summary] }
 //           wnGetRoom { roomId } -> { room, players }      (a closed room needs the Hub pass: History)
 //           wnCloseRoom { roomId } -> { ok }
 // Student (anonymous): wnJoinRoom { code, nickname } -> { roomId, nickname }
-//           wnPlayRoom { roomId } -> { room, me }
-//           wnSubmitResult { roomId, index, result } -> { best, path }
+//           wnPlayRoom { roomId } -> { room, me, classGoal }      (classGoal: the class total only, or null)
+//           wnSubmitResult { roomId, index, result } -> { best, path, classGoal }
 import { randomBytes } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { fs, fail, caller, teacher } from './common.js';
@@ -15,6 +15,7 @@ import { hasAccess } from './engines/hub/entitlements.js';
 import {
   ROOM_LIMITS, ROOM_MS, codeFromBytes, normalizeCode, checkNickname, checkRoomGames, listSnapshot,
   checkResult, mergeResult, pathSummary, isOpen, cleanupAction, RETENTION_MS,
+  checkClassGoal, classProgress, classStarsDelta,
 } from './engines/rooms/rooms.js';
 
 export const ROOMS = 'wnRooms';
@@ -34,6 +35,7 @@ const statusOf = (room, now) => (isOpen(room, now) ? 'open' : 'closed');
 const summary = (id, r, now) => ({
   id, code: r.code, title: r.title, listTitle: r.listSnapshot?.title ?? '', status: statusOf(r, now),
   games: r.games.length, players: r.playerCount ?? 0, createdAt: r.createdAt, expiresAt: r.expiresAt, closedAt: r.closedAt ?? null,
+  classGoal: classProgress(r),
 });
 
 async function hubPass(uid) {
@@ -53,11 +55,14 @@ export async function createRoom(req) {
   const seed = randomBytes(8).toString('hex');
   const check = checkRoomGames(list, req.data?.games, seed);
   if (!check.ok) fail('invalid-argument', check.reason, check.type ? { type: check.type } : {});
+  const classGoal = checkClassGoal(req.data?.classGoal);
+  if (classGoal === undefined) fail('invalid-argument', 'class-goal');
   const now = Date.now();
   const ref = fs().collection(ROOMS).doc();
   const room = {
     ownerUid: uid, listId, title: titleOf(req.data?.title) || list.title, listSnapshot: listSnapshot(list),
     games: check.games, seed, status: 'open', playerCount: 0, createdAt: now, expiresAt: now + ROOM_MS,
+    classGoal, classStars: 0,
   };
   // a free code: a code doc whose room is closed or expired may be taken over
   for (let attempt = 0; attempt < 12; attempt++) {
@@ -95,7 +100,7 @@ export async function getRoom(req) {
     return { nickname: p.nickname, joinedAt: p.joinedAt, results: p.results ?? {}, path: pathSummary(r, p.results ?? {}) };
   }).sort((a, b) => a.joinedAt - b.joinedAt);
   const { ownerUid, seed, ...room } = r;
-  return { room: { id: snap.id, ...room, status: statusOf(r, now) }, players };
+  return { room: { id: snap.id, ...room, status: statusOf(r, now), classProgress: classProgress(r) }, players };
 }
 
 export async function closeRoom(req) {
@@ -149,6 +154,7 @@ export async function playRoom(req) {
   return {
     room: { id, title: r.title, listSnapshot: r.listSnapshot, games: r.games, seed: r.seed, status: statusOf(r, Date.now()), expiresAt: r.expiresAt },
     me: { nickname: me.get('nickname'), results: me.get('results') ?? {}, path: pathSummary(r, me.get('results') ?? {}) },
+    classGoal: classProgress(r),
   };
 }
 
@@ -167,9 +173,14 @@ export async function submitResult(req) {
     const check = checkResult(r, index, req.data?.result);
     if (!check.ok) fail('invalid-argument', check.reason);
     const results = { ...(me.get('results') ?? {}) };
-    results[index] = mergeResult(results[index], check.result, now);
+    const prev = results[index];
+    results[index] = mergeResult(prev, check.result, now);
     tx.update(playerRef, { [`results.${index}`]: results[index] });
-    return { stars: check.result.stars, best: results[index], path: pathSummary(r, results) };
+    // the class total counts each student's best per game once: only an improvement is added
+    const delta = r.classGoal ? classStarsDelta(prev, results[index]) : 0;
+    if (delta) tx.update(ref, { classStars: FieldValue.increment(delta) });
+    const classGoal = classProgress({ ...r, classStars: (r.classStars ?? 0) + delta });
+    return { stars: check.result.stars, best: results[index], path: pathSummary(r, results), classGoal };
   });
 }
 

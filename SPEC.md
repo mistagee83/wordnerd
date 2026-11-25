@@ -92,7 +92,7 @@ spaces and hyphens in expressions); language-specific fields (e.g. German articl
 
 ## 6. Games
 
-All deterministic (list + settings + seed). First version (decided 2026-11-21): seven games.
+All deterministic (list + settings + seed). First version (decided 2026-11-21): seven games; Bridge added 2026-11-25.
 
 | Game | Mono/bilingual | Source fields | Teacher settings (from the old skill tree) |
 |---|---|---|---|
@@ -103,6 +103,7 @@ All deterministic (list + settings + seed). First version (decided 2026-11-21): 
 | Hangman (balloons) | both | term (+ clue) | number of words (default 4) and lives shared by them (default 12, 4–12) |
 | Gapfill (connected text) | monolingual | `cloze` + distractors | extra wrong words in the bank (0–4) |
 | Drowning (type against rising water) | bilingual | translation → term | water speed |
+| Bridge (2026-11-25) | monolingual | `example` (sentence with a gap) + `distractors` | number of sentences (5–20, default 10) |
 
 Later (fields already exist, no new analysis needed): quiz, anagrams, Oxford minute, sentence gapfill, odd one out,
 assigning, word formation.
@@ -129,6 +130,11 @@ assigning, word formation.
   swap or move them back, check everything at the end. Wrong words are marked and the answer shown.
 - **Drowning** – a red British telephone box fills with water, a mortarboard floats on the surface; a correct
   answer drains some water; Skip sends the word to the end of the queue.
+- **Bridge** (2026-11-25) – a gorge with a rope bridge; the WordNerd figure from the old game (`public/img/games/
+  nerd.webp`, from `mentés/images/hangman/nerd-1.png`) stands on the left cliff. Each sentence (the item's example
+  with its gap) offers the answer and up to three distractors (at least two). A right word lays a plank and the
+  figure steps onto it; a wrong one cracks a plank that falls into the river, the right word is shown, and the
+  sentence comes back at the end. All planks laid: across. Hand-added words (no example) are skipped.
 
 Game UIs: `public/js/games/<game>.js`, each `render(puzzle, ctx) → { el, destroy }` with
 `ctx.onFinish({ score, max, misses })`; drag and drop with tap fallback in `public/js/games/dnd.js`; styles in
@@ -159,7 +165,7 @@ room is `gameSeed(roomSeed, gameIndex)`. Rules settled in F1:
   placed the most.
 - Drowning: water fills in 60 / 40 / 25 seconds (slow / normal / fast); a correct answer drains 20 / 15 / 12 %.
 
-Local preview of all seven games with the sample list: `npm run serve`, then `/dev/preview.html`.
+Local preview of all eight games with the sample list: `npm run serve`, then `/dev/preview.html`.
 
 ## 7. Access and credits
 
@@ -250,13 +256,14 @@ Decisions (András, 2026-11-21): 1–3 stars per game and a path; a room lives u
 
 - **Rules** (`engines/rooms/rooms.js`, pure, tested): 6-character codes without look-alikes (no 0/O, 1/I/L);
   nicknames 2–20 characters, letters/digits/space/. - _ ', unique in a room ignoring case and spacing; the room
-  set-up (each of the seven games at most once, settings normalised, every game must build from the list);
+  set-up (each game at most once, at most eight, settings normalised, every game must build from the list);
   result checks (bounds, item ids; stars computed on the server, never taken from the client); stars per game
-  (memory: moves per pair; matching: first-try matches; word search: wrong drags; crossword: help used; hangman:
+  (memory: moves per pair, 3 stars ≤ 2.2, 2 stars ≤ 3.2 since 2026-11-25; bridge: cracked planks 0 / ≤ 2 / more;
+  matching: first-try matches; word search: wrong drags; crossword: help used; hangman:
   words and lives kept; gapfill: share right; drowning: survived and misses); best try kept, tries counted, the
   first try's misses kept for the teacher.
 - **Data**: `wnRooms/{roomId}` (`ownerUid`, `code`, `title`, `listId`, `listSnapshot`, `games[]`, `seed`,
-  `status`, `playerCount`, `createdAt`, `expiresAt`, `closedAt`), `wnRooms/{id}/players/{uid}` (`nickname`,
+  `status`, `playerCount`, `createdAt`, `expiresAt`, `closedAt`, `classGoal` { percent } or null, `classStars`), `wnRooms/{id}/players/{uid}` (`nickname`,
   `key`, `joinedAt`, `results{ index: best try }`), `wnRooms/{id}/names/{key}` (nickname lock), `wnCodes/{code}`
   (`roomId`, `expiresAt`, `open`; a closed or expired code can be reused). Only functions touch them.
 - **Callables**: `wnCreateRoom`, `wnListRooms` (with `hubPass`), `wnGetRoom` (a closed room = History → Hub

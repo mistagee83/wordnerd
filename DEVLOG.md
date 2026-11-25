@@ -542,3 +542,44 @@ recall needs about 1.6 per pair on average (every card is unknown at first). A s
 with perfect recall reached 1.5 in 32 % of 12-pair games and 12 % of 18-pair games; with a little forgetting, 0–5 %.
 Now 3 stars ≤ 2.2 moves per pair (the old 2-star limit), 2 stars ≤ 3.2, else 1 (`engines/rooms/rooms.js`,
 computed on the server). Results already saved keep their stars. `npm test` 74 pass.
+
+## Bridge, a new game (2026-11-25)
+
+András chose Bridge from three new-game ideas (it practises using the word in a new sentence, which no game did
+alone). No new analysis: it uses each item's `example` (sentence with one gap + answer) and `distractors`.
+- `engines/games/bridge.js`: `words` 5–20 (default 10); an item is usable with a one-gap example and at least two
+  distractors that differ from the answer and each other (case-insensitive); options shuffled with the game rng.
+- `public/js/games/bridge.js` (inline SVG): gorge, river, rope bridge with one plank slot per sentence. Right word:
+  a plank drops in and the walker steps onto it. Wrong word: a cracked plank falls into the river, the right word
+  is shown in green, the sentence comes back at the end. Result: score = right the first time, misses per item.
+- The walker is the WordNerd figure from the old game, as András asked (`mentés/images/hangman/nerd-1.png`, cropped
+  to the figure, 96×260 WebP, 8.8 KB, `public/img/games/nerd.webp`).
+- Stars (server): no cracked plank 3, at most 2 → 2, more → 1. Rooms take up to eight games; the teacher page says
+  "eight games". Not changed: the landing page still says seven games (marketing text; ask András).
+
+## Class goal (2026-11-25)
+
+András: an optional class goal when opening a room, a number of stars that is a percentage of the stars the class
+can get.
+- Rules (`engines/rooms/rooms.js`): `classGoal` { percent } (10–100 in tens; the form offers 50–100, default 70)
+  or null. Goal = ceil(percent × players × games × 3); it grows as students join, so the percentage stays fair.
+  `classStars` on the room counts each student's best per game once: a better try adds only the difference.
+- Functions: `wnCreateRoom` takes `classGoal` (bad value → `class-goal`); `wnSubmitResult` adds the improvement in
+  the same transaction and returns `classGoal`; `wnPlayRoom` returns `classGoal` (the class total only: no names,
+  no other student's stars, rule 6); `wnGetRoom` and `wnListRooms` show it to the teacher.
+- Student page: a "Class goal" bar under the room title (stars / goal, how many more), a line on the finish screen;
+  when the goal is reached the bar turns green and confetti falls once per room on that device (localStorage).
+- Teacher: "Class goal" box in the room set-up with the percentage and an example ("with 25 students and 8 games:
+  420 of 600 stars"); the monitor shows the same bar.
+
+## Verification (Memory stars, Bridge, class goal)
+
+`npm test` 76 pass (Bridge engine, stars, class goal rules); `npm run test:emulator` 16 checks pass (now with all
+eight games, a 50 % class goal: improvements only, the student sees no other names, the teacher sees the total;
+the Memory test data moved to 30 moves for 1 star). Browser with the emulators: Bridge in the preview (right,
+wrong, cracked plank, the figure walking, finish; at 375 px no overflow); the room set-up with the goal box; a
+student's path with the bar (0 / 12, then 3 / 12 after a perfect Bridge); a 1-game room with 50 %: goal 2,
+reached after Bridge, confetti, the monitor says "Class goal reached".
+**Not verified**: a real phone; several students at once (the total is a Firestore increment in the result's
+transaction). **Going live needs both**: `firebase deploy --only functions:wordnerd` (stars, eight games, class
+goal, and the analysis prompt v5 from earlier today), then `main`.

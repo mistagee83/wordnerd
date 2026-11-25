@@ -160,12 +160,13 @@ assert.deepEqual((await call(other.token, {}, 'wnListLists')).result.lists, []);
 assert.equal((await call(student.token, {}, 'wnListLists')).reason, 'teacher-only');
 ok('library: list, open, edit (a deleted word\'s gap becomes text), refusals; other teachers and students see nothing');
 // 12–15. rooms: open, join, play, see the results, close
-const games = ['memory', 'matching', 'wordsearch', 'crossword', 'hangman', 'gapfill', 'drowning'].map((type) => ({ type, settings: {} }));
-const made = await call(teacher.token, { listId, games, title: 'Year 9 – family' }, 'wnCreateRoom');
+const games = ['memory', 'matching', 'wordsearch', 'crossword', 'hangman', 'gapfill', 'drowning', 'bridge'].map((type) => ({ type, settings: {} }));
+const made = await call(teacher.token, { listId, games, title: 'Year 9 – family', classGoal: { percent: 50 } }, 'wnCreateRoom');
 assert.ok(made.result?.code?.length === 6, JSON.stringify(made));
 const { roomId, code } = made.result;
 assert.equal((await call(teacher.token, { listId, games: [{ type: 'chess' }] }, 'wnCreateRoom')).reason, 'unknown-game');
 assert.equal((await call(other.token, { listId, games }, 'wnCreateRoom')).reason, 'list');
+assert.equal((await call(teacher.token, { listId, games, classGoal: { percent: 55 } }, 'wnCreateRoom')).reason, 'class-goal');
 const kid1 = await signUp(true);
 const kid2 = await signUp(true);
 const j1 = await call(kid1.token, { code: code.toLowerCase(), nickname: ' Anna ' }, 'wnJoinRoom');
@@ -174,25 +175,37 @@ assert.equal((await call(kid1.token, { code, nickname: 'Someone else' }, 'wnJoin
 assert.equal((await call(kid2.token, { code, nickname: 'anna' }, 'wnJoinRoom')).reason, 'nickname-taken');
 assert.equal((await call(kid2.token, { code: 'ZZZZZZ', nickname: 'Ben' }, 'wnJoinRoom')).reason, 'code');
 assert.equal((await call(kid2.token, { code, nickname: 'Ben' }, 'wnJoinRoom')).result.nickname, 'Ben');
-ok('rooms: a teacher opens a room with all seven games; students join with code and nickname (rejoin, taken name, wrong code)');
+ok('rooms: a teacher opens a room with all eight games and a class goal; students join with code and nickname (rejoin, taken name, wrong code)');
 
 const play = await call(kid1.token, { roomId }, 'wnPlayRoom');
-assert.equal(play.result.room.games.length, 7);
+assert.equal(play.result.room.games.length, 8);
+// class goal: 2 players × 8 games × 3 stars = 48, 50 % → 24
+assert.deepEqual([play.result.classGoal.goal, play.result.classGoal.stars, play.result.classGoal.reached], [24, 0, false]);
 assert.equal(play.result.room.listSnapshot.items.length, 20);
 assert.equal(play.result.me.nickname, 'Anna');
 assert.equal((await call(other.token, { roomId }, 'wnPlayRoom')).reason, 'player');
-const s1 = await call(kid1.token, { roomId, index: 0, result: { score: 8, max: 8, timeMs: 61000, moves: 20, misses: { w01: 2 } } }, 'wnSubmitResult');
+const s1 = await call(kid1.token, { roomId, index: 0, result: { score: 8, max: 8, timeMs: 61000, moves: 30, misses: { w01: 2 } } }, 'wnSubmitResult');
 assert.equal(s1.result?.stars, 1, JSON.stringify(s1));
 const s2 = await call(kid1.token, { roomId, index: 0, result: { score: 8, max: 8, timeMs: 40000, moves: 9, misses: {} } }, 'wnSubmitResult');
 assert.deepEqual([s2.result.stars, s2.result.best.stars, s2.result.best.attempts, s2.result.path.stars], [3, 3, 2, 3]);
 assert.deepEqual(s2.result.best.firstMisses, { w01: 2 });
+assert.equal(s1.result.classGoal.stars, 1); // first try: 1 star
+assert.equal(s2.result.classGoal.stars, 3); // the better try adds only the difference
+const s3 = await call(kid1.token, { roomId, index: 0, result: { score: 8, max: 8, timeMs: 90000, moves: 30, misses: {} } }, 'wnSubmitResult');
+assert.equal(s3.result.classGoal.stars, 3); // a worse try adds nothing
+const sb = await call(kid2.token, { roomId, index: 7, result: { score: 10, max: 10, timeMs: 50000, misses: {} } }, 'wnSubmitResult');
+assert.deepEqual([sb.result.stars, sb.result.classGoal.stars], [3, 6]); // Bridge, no cracked plank: 3 stars
+assert.equal((await getDoc(`wnRooms/${roomId}`)).classStars, 6);
+const kidPlay = await call(kid2.token, { roomId }, 'wnPlayRoom');
+assert.equal(JSON.stringify(kidPlay.result).includes('Anna'), false); // the class total only, nobody else's name or stars
 assert.equal((await call(kid1.token, { roomId, index: 0, result: { score: 9, max: 8, timeMs: 1 } }, 'wnSubmitResult')).reason, 'score');
-ok('a student plays: results checked, stars computed, best try kept, first-try misses kept');
+ok('a student plays: results checked, stars computed, best try kept, first-try misses kept; the class total grows by improvements only');
 
 const view = await call(teacher.token, { roomId }, 'wnGetRoom');
 assert.equal(view.result.room.code, code);
 assert.equal(view.result.room.seed, undefined);
-assert.deepEqual(view.result.players.map((p) => [p.nickname, p.path.stars]), [['Anna', 3], ['Ben', 0]]);
+assert.deepEqual(view.result.players.map((p) => [p.nickname, p.path.stars]), [['Anna', 3], ['Ben', 3]]);
+assert.deepEqual([view.result.room.classProgress.stars, view.result.room.classProgress.goal], [6, 24]);
 assert.equal((await call(other.token, { roomId }, 'wnGetRoom')).reason, 'room');
 const myRooms = await call(teacher.token, {}, 'wnListRooms');
 assert.ok(myRooms.result.rooms.some((r) => r.id === roomId && r.players === 2 && r.status === 'open'));

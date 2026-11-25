@@ -67,3 +67,19 @@ body.play {
 @keyframes star-in { from { transform: scale(.2) rotate(-40deg); opacity: 0; } }
 .finish-line { font: 1.6rem var(--wn-font-display); color: var(--wn-amber-500); margin: 8px 0; letter-spacing: .03em; }
 .finish-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 12px 0 0; }
+
+/* class goal (2026-11-25): the class total only */
+.goal { position: relative; overflow: hidden; margin: 0 0 16px; padding: 12px 14px; border-radius: var(--wn-radius-md); border: 2px solid var(--c-wood-line); background: rgb(0 0 0 / .2); }
+.goal.is-reached { border-color: var(--c-ok); }
+.goal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.goal-title { font: 1.05rem var(--wn-font-display); letter-spacing: .03em; color: var(--wn-amber-500); }
+.goal.is-reached .goal-title { color: var(--c-ok); }
+.goal-count { font-weight: 700; white-space: nowrap; }
+.goal-track { height: 14px; border-radius: 999px; background: rgb(0 0 0 / .35); overflow: hidden; }
+.goal-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--wn-amber-500), #ffd98a); transition: width .8s ease; }
+.goal.is-reached .goal-fill { background: linear-gradient(90deg, var(--c-ok), #b6f06a); }
+.goal-note { margin: 8px 0 0; font-size: .9rem; color: var(--c-text-muted); }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti span { position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px; opacity: 0; animation: confetti 2.4s ease-in var(--d) 2; }
+@keyframes confetti { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(var(--x), 150px) rotate(540deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .confetti { display: none; } }

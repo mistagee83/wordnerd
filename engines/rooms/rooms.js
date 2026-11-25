@@ -160,6 +160,34 @@ export function pathSummary(room, results = {}) {
 export const isOpen = (room, now) => room.status === 'open' && now < room.expiresAt;
 
 // ---------------------------------------------------------------------------------------------------
+// class goal (2026-11-25): optional; the whole class collects a percentage of the stars it can get. Only the
+// class total is shown to the students, never anyone else's stars (CLAUDE.md rule 6). The goal follows the
+// number of players: every student who joins adds their 3 × games stars to what the class can get.
+
+export const CLASS_GOAL = Object.freeze({ min: 10, max: 100, step: 10, def: 70, choices: [50, 60, 70, 80, 90, 100] });
+
+/** The teacher's choice: a percentage (10–100, whole tens) or nothing. Returns { percent } or null. */
+export function checkClassGoal(v) {
+  if (v == null || v === false) return null;
+  const p = Number(v?.percent ?? v);
+  if (!Number.isInteger(p) || p < CLASS_GOAL.min || p > CLASS_GOAL.max || p % CLASS_GOAL.step) return undefined; // invalid
+  return { percent: p };
+}
+
+/** The class's progress: { percent, stars, goal, maxStars, reached } or null when the room has no goal. */
+export function classProgress(room) {
+  if (!room?.classGoal) return null;
+  const players = room.playerCount ?? 0;
+  const maxStars = players * room.games.length * 3;
+  const goal = players ? Math.max(1, Math.ceil((maxStars * room.classGoal.percent) / 100)) : 0;
+  const stars = room.classStars ?? 0;
+  return { percent: room.classGoal.percent, stars, goal, maxStars, players, reached: goal > 0 && stars >= goal };
+}
+
+/** How many stars a new best adds to the class total (a better try replaces the old best, never adds twice). */
+export const classStarsDelta = (prevBest, nextBest) => Math.max(0, (nextBest?.stars ?? 0) - (prevBest?.stars ?? 0));
+
+// ---------------------------------------------------------------------------------------------------
 // monitor and retention (F5)
 
 /**
