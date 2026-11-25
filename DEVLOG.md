@@ -467,3 +467,19 @@ F6 done on 2026-11-22: András published the Hub product (`mrandrewshub.com/p/wo
 tags, Open app) and had already run the end-to-end test himself with a new teacher account: everything worked
 (sign-up credits, list, room, phones, monitor, closing, Results, one-click Open app from the Hub). WordNerd is
 launched. Still to check: the first `wnCleanup` log line (daily 03:30 Europe/Budapest).
+
+## Paste a screenshot on New list (2026-11-25)
+
+Asked by András: create a list by pasting an image with Ctrl+V (not a ready-made word list).
+- `public/js/teacher.js`: a `paste` listener on the New list page. A file on the clipboard (a screenshot, a copied
+  image or PDF) switches to "Upload a file" and becomes the upload, named "Pasted image.png" instead of the
+  browser's "image.png". Plain text pastes are untouched. The chosen, dropped and pasted files share one path
+  (`takeFile`), so the same type and size checks apply.
+- A pasted image over 4 MB is re-encoded as JPEG in the browser (stepped down to at most 1600 px on the long side
+  if needed) so it still fits. Chosen or dropped files are not shrunk (unchanged behaviour).
+- An image upload shows a thumbnail in the drop zone; the drop zone and the text box mention pasting.
+
+**Verified** (emulators + mock model, synthetic paste events in the browser): a small PNG becomes "Pasted
+image.png" with a thumbnail; a 9.65 MB PNG became a 1.84 MB JPEG; a text paste still goes into the text box;
+a pasted screenshot was analysed into a list (50 → 48 credits). `npm test` 73 pass. **Not verified**: a real
+Ctrl+V from the Windows clipboard (synthetic events only), Safari/iOS, the real model reading a screenshot.

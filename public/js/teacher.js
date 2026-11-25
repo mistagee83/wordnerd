@@ -363,6 +363,57 @@ function readFile(file) {
   });
 }
 
+// a pasted screenshot over the size limit is re-encoded as JPEG (and scaled down if needed) so it still fits
+async function shrinkImage(file) {
+  const bmp = await createImageBitmap(file);
+  try {
+    for (const [side, q] of [[Infinity, 0.9], [3000, 0.85], [2200, 0.8], [1600, 0.75]]) {
+      const k = Math.min(1, side / Math.max(bmp.width, bmp.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+      const g = cv.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); // transparent parts of a screenshot stay readable
+      g.drawImage(bmp, 0, 0, cv.width, cv.height);
+      const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg', q));
+      if (blob && blob.size <= INPUT_LIMITS.maxFileBytes) return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
+    }
+    return file;
+  } finally { bmp.close?.(); }
+}
+
+// the chosen, dropped or pasted file goes into the New list form
+async function takeFile(file, { pasted = false } = {}) {
+  const F = S.form ?? (S.form = newForm());
+  F.file = null; F.fileError = '';
+  if (file) {
+    if (!FILE_TYPES[file.type]) F.fileError = REASON_TEXT['file-type'];
+    else {
+      if (pasted && file.size > INPUT_LIMITS.maxFileBytes && file.type.startsWith('image/')) {
+        try { file = await shrinkImage(file); } catch { /* keep the original; the size check below reports it */ }
+      }
+      if (file.size > INPUT_LIMITS.maxFileBytes) F.fileError = REASON_TEXT['file-too-large'];
+      else F.file = { name: file.name, size: file.size, mimeType: file.type, data: await readFile(file) };
+    }
+  }
+  renderPanel();
+}
+
+// Ctrl+V on the New list page: an image (screenshot) or PDF on the clipboard becomes the uploaded file;
+// plain text still goes into the text box as before
+document.addEventListener('paste', (e) => {
+  if (S.view !== 'new' || S.analyzing || document.querySelector('.overlay')) return;
+  const files = [...(e.clipboardData?.items ?? [])].filter((it) => it.kind === 'file').map((it) => it.getAsFile()).filter(Boolean);
+  if (!files.length) return;
+  e.preventDefault();
+  const file = files.find((f) => FILE_TYPES[f.type]) ?? files[0];
+  const F = S.form ?? (S.form = newForm());
+  F.kind = 'file'; S.error = '';
+  const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[file.type];
+  // screenshots arrive as "image.png"; give them a name the teacher recognises
+  const named = ext && /^image\.\w+$/i.test(file.name || 'image.png') ? new File([file], 'Pasted image.' + ext, { type: file.type }) : file;
+  takeFile(named, { pasted: true });
+});
+
 function newListView() {
   const F = S.form ?? (S.form = newForm());
   const words = (F.text.trim().match(/\S+/g) ?? []).length;
@@ -371,7 +422,7 @@ function newListView() {
   const kindBtn = (kind, label) => h('button', { type: 'button', class: `seg${F.kind === kind ? ' is-on' : ''}`, 'aria-pressed': String(F.kind === kind),
     onclick: () => { F.kind = kind; S.error = ''; renderPanel(); } }, label);
 
-  const textArea = h('textarea', { class: 'src-text', rows: 12, placeholder: 'Paste a reading text or a lesson here…', oninput: (e) => {
+  const textArea = h('textarea', { class: 'src-text', rows: 12, placeholder: 'Paste a reading text or a lesson here… (a pasted screenshot becomes an upload)', oninput: (e) => {
     F.text = e.target.value;
     const n = (F.text.trim().match(/\S+/g) ?? []).length;
     counter.textContent = `${n} words · ${INPUT_LIMITS.minWords}–${INPUT_LIMITS.maxWords}`;
@@ -379,23 +430,16 @@ function newListView() {
   } });
   textArea.value = F.text;
 
-  const fileInput = h('input', { type: 'file', accept: Object.keys(FILE_TYPES).join(','), class: 'visually-hidden', id: 'src-file', onchange: async (e) => {
-    const file = e.target.files?.[0];
-    F.file = null; F.fileError = '';
-    if (file) {
-      if (!FILE_TYPES[file.type]) F.fileError = REASON_TEXT['file-type'];
-      else if (file.size > INPUT_LIMITS.maxFileBytes) F.fileError = REASON_TEXT['file-too-large'];
-      else F.file = { name: file.name, size: file.size, mimeType: file.type, data: await readFile(file) };
-    }
-    renderPanel();
-  } });
+  const fileInput = h('input', { type: 'file', accept: Object.keys(FILE_TYPES).join(','), class: 'visually-hidden', id: 'src-file',
+    onchange: (e) => takeFile(e.target.files?.[0]) });
   const drop = h('label', { for: 'src-file', class: `dropzone${F.file ? ' has-file' : ''}`,
     ondragover: (e) => { e.preventDefault(); e.currentTarget.classList.add('is-over'); },
     ondragleave: (e) => e.currentTarget.classList.remove('is-over'),
     ondrop: (e) => { e.preventDefault(); const dt = new DataTransfer(); if (e.dataTransfer.files[0]) dt.items.add(e.dataTransfer.files[0]); fileInput.files = dt.files; fileInput.dispatchEvent(new Event('change')); } },
   F.file
-    ? [h('strong', {}, F.file.name), h('span', { class: 'muted' }, ` · ${(F.file.size / 1024 / 1024).toFixed(2)} MB · click to change`)]
-    : [h('strong', {}, 'Choose a file'), h('span', { class: 'muted' }, ' or drop it here · PDF or photo of a page · at most 4 MB')]);
+    ? [F.file.mimeType.startsWith('image/') ? h('img', { class: 'drop-thumb', alt: '', src: `data:${F.file.mimeType};base64,${F.file.data}` }) : null,
+      h('strong', {}, F.file.name), h('span', { class: 'muted' }, ` · ${(F.file.size / 1024 / 1024).toFixed(2)} MB · click to change, or paste another`)]
+    : [h('strong', {}, 'Choose a file'), h('span', { class: 'muted' }, ' or drop it here, or paste a screenshot (Ctrl+V) · PDF or photo of a page · at most 4 MB')]);
 
   const select = (name, options, value, placeholder) => h('select', { name, onchange: (e) => {
     F[name] = name === 'count' && e.target.value !== 'auto' ? Number(e.target.value) : e.target.value;
