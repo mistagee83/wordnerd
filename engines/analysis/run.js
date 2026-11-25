@@ -10,14 +10,14 @@ export const MAX_ATTEMPTS = 2; // one retry after a broken or unusable answer
  * input: the checked input (input.js). deps:
  *   spend() -> { ledgerId, cost }            throws on no credits (passed through untouched)
  *   refund(ledgerId)                         idempotent
- *   model.complete({ system, text, file }) -> { text, usage }   throws { unavailable: true } if the model is gone
+ *   model.complete({ system, text, files }) -> { text, usage }   throws { unavailable: true } if the model is gone
  *   save(list) -> listId
  *   log(record)                              one record per model attempt
  * Returns { ok: true, listId, cost, warnings } or { ok: false, reason, detail? } (credits refunded).
  */
 export async function runAnalysis(input, { spend, refund, model, save, log = () => {}, now = () => Date.now() }) {
   const { ledgerId, cost } = await spend();
-  const prompt = buildPrompt({ ...input, material: input.kind === 'text' ? input.text : '' });
+  const prompt = buildPrompt({ ...input, material: input.kind === 'text' ? input.text : '', fileCount: input.files?.length ?? 0 });
   let last = { reason: 'bad_output' };
   try {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -25,7 +25,7 @@ export async function runAnalysis(input, { spend, refund, model, save, log = () 
       const record = { promptVersion: PROMPT_VERSION, model: model.name ?? null, attempt, outcome: null, usage: null, ms: null, warnings: [] };
       let raw = null;
       try {
-        const res = await model.complete({ system: prompt.system, text: prompt.text, file: input.kind === 'file' ? input.file : null });
+        const res = await model.complete({ system: prompt.system, text: prompt.text, files: input.kind === 'file' ? input.files : [] });
         record.usage = res.usage ?? null;
         raw = JSON.parse(res.text);
       } catch (e) {

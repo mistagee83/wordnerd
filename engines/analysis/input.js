@@ -6,7 +6,9 @@ export const INPUT_LIMITS = Object.freeze({
   minWords: 40,
   maxWords: 2500, // a reading or a lesson, not a book (SPEC 4)
   maxChars: 20000,
-  maxFileBytes: 4 * 1024 * 1024, // a callable request carries at most ~10 MB; base64 adds a third
+  maxFileBytes: 4 * 1024 * 1024, // per file
+  maxFiles: 4, // e.g. a few screenshots of the pages of one lesson (2026-11-25)
+  maxTotalFileBytes: 6 * 1024 * 1024, // all files together: a callable request carries at most ~10 MB; base64 adds a third
   // a number, or 'auto': the model decides how many words are really useful, up to autoMax (decided 2026-11-21)
   count: { min: 10, max: 30, def: 'auto', autoMax: 40 },
   focusChars: 120,
@@ -45,14 +47,28 @@ export function checkInput(data = {}) {
     return { ok: true, input: { ...base, kind: 'text', text, source: { kind: 'text', wordCount: n, title: title || null } } };
   }
   if (data.kind === 'file') {
-    const mimeType = data.file?.mimeType;
-    const b64 = typeof data.file?.data === 'string' ? data.file.data : '';
-    if (!FILE_TYPES[mimeType]) return { ok: false, reason: 'file-type' };
-    if (!b64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) return { ok: false, reason: 'file-data' };
-    const bytes = base64Bytes(b64);
-    if (bytes > INPUT_LIMITS.maxFileBytes) return { ok: false, reason: 'file-too-large' };
-    const name = typeof data.file?.name === 'string' ? data.file.name.slice(0, 120) : null;
-    return { ok: true, input: { ...base, kind: 'file', file: { mimeType, data: b64 }, source: { kind: FILE_TYPES[mimeType], bytes, title: title || name } } };
+    // `files`: up to maxFiles, in reading order; a single `file` (the earlier request shape) still works
+    const list = Array.isArray(data.files) ? data.files : data.file ? [data.file] : [];
+    if (!list.length) return { ok: false, reason: 'file-type' };
+    if (list.length > INPUT_LIMITS.maxFiles) return { ok: false, reason: 'too-many-files' };
+    const files = [];
+    let total = 0;
+    for (const f of list) {
+      const mimeType = f?.mimeType;
+      const b64 = typeof f?.data === 'string' ? f.data : '';
+      if (!FILE_TYPES[mimeType]) return { ok: false, reason: 'file-type' };
+      if (!b64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) return { ok: false, reason: 'file-data' };
+      const bytes = base64Bytes(b64);
+      if (bytes > INPUT_LIMITS.maxFileBytes) return { ok: false, reason: 'file-too-large' };
+      total += bytes;
+      files.push({ mimeType, data: b64 });
+    }
+    if (total > INPUT_LIMITS.maxTotalFileBytes) return { ok: false, reason: 'files-too-large' };
+    const name = typeof list[0]?.name === 'string' ? list[0].name.slice(0, 120) : null;
+    const kind = files.some((f) => FILE_TYPES[f.mimeType] === 'pdf') ? 'pdf' : 'image';
+    const source = { kind, bytes: total, title: title || name };
+    if (files.length > 1) source.files = files.length;
+    return { ok: true, input: { ...base, kind: 'file', files, source } };
   }
   return { ok: false, reason: 'kind' };
 }

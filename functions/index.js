@@ -14,7 +14,7 @@ setGlobalOptions({ region: REGION, maxInstances: 10 });
 // Secret Manager: firebase functions:secrets:set WN_GEMINI_API_KEY
 const GEMINI_KEY = defineSecret('WN_GEMINI_API_KEY');
 
-// The material travels in the request (a file as base64, at most 4 MB before encoding; SPEC 4).
+// The material travels in the request (files as base64: at most 4, each at most 4 MB, 6 MB together before encoding; SPEC 4).
 export const wnAnalyze = onCall(
   { secrets: [GEMINI_KEY], timeoutSeconds: 300, memory: '512MiB' },
   (req) => analyze(req, { apiKey: () => GEMINI_KEY.value() }),

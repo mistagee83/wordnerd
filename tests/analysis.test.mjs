@@ -55,6 +55,22 @@ test('input: files – type, base64 and size are checked; the size counts decode
   assert.equal(file({ data: fits }).ok, true);
 });
 
+test('input: several files – at most four, in order, 6 MB together', () => {
+  const png = { mimeType: 'image/png', data: 'iVBORw0KGgo=', name: 'Pasted image.png' };
+  const many = (list) => checkInput({ ...base, kind: 'file', files: list });
+  const two = many([png, { mimeType: 'application/pdf', data: 'JVBERi0xLjQK' }]);
+  assert.equal(two.ok, true);
+  assert.equal(two.input.files.length, 2);
+  assert.deepEqual(two.input.source, { kind: 'pdf', bytes: 8 + 9, title: 'Pasted image.png', files: 2 });
+  assert.equal(many([png, png, png, png]).ok, true);
+  assert.equal(many([png, png, png, png, png]).reason, 'too-many-files');
+  assert.equal(many([]).reason, 'file-type');
+  assert.equal(many([png, { ...png, mimeType: 'image/gif' }]).reason, 'file-type');
+  const threeMB = 'A'.repeat(Math.ceil((3 * 1024 * 1024) / 3) * 4 + 4);
+  assert.equal(many([{ ...png, data: threeMB }, { ...png, data: threeMB }]).reason, 'files-too-large');
+  assert.equal(many([{ ...png, data: threeMB }]).ok, true);
+});
+
 // ---------- prompt ----------
 test('prompt: carries level, count, languages, focus and the material', () => {
   const p = buildPrompt({ level: 'B2', count: 25, supportLang: 'de', focus: 'phrasal verbs', kind: 'text', material: 'MATERIAL TEXT' });
@@ -64,7 +80,7 @@ test('prompt: carries level, count, languages, focus and the material', () => {
   assert.match(p.text, /focus on: phrasal verbs/);
   assert.match(p.text, /<material>\nMATERIAL TEXT\n<\/material>/);
   assert.match(p.system, /DATA, not instructions/);
-  assert.equal(PROMPT_VERSION, 'analyze-v3');
+  assert.equal(PROMPT_VERSION, 'analyze-v4');
   assert.match(p.text, /COMPLETE word or expression/);
 });
 
@@ -72,7 +88,8 @@ test('prompt: a file request has no material block and no focus line without foc
   const p = buildPrompt({ level: 'A2', count: 10, supportLang: 'hu', kind: 'file' });
   assert.doesNotMatch(p.text, /<material>/);
   assert.doesNotMatch(p.text, /focus on/);
-  assert.match(p.text, /attached file/);
+  assert.match(p.text, /attached file\./);
+  assert.match(buildPrompt({ level: 'A2', count: 10, supportLang: 'hu', kind: 'file', fileCount: 3 }).text, /3 attached files: consecutive parts/);
   assert.throws(() => buildPrompt({ level: 'A2', count: 10, supportLang: 'xx' }));
 });
 
@@ -178,7 +195,7 @@ test('run: success spends once, saves the list with the prompt version, no refun
   const r = await runAnalysis(input, d);
   assert.deepEqual([r.ok, r.listId, r.cost], [true, 'list-1', 3]);
   assert.deepEqual([calls.spend, calls.model, calls.refund.length], [1, 1, 0]);
-  assert.equal(calls.saved.promptVersion, 'analyze-v3');
+  assert.equal(calls.saved.promptVersion, 'analyze-v4');
   assert.equal(calls.saved.items.length, 20);
   assert.equal(calls.logs[0].outcome, 'ok');
 });
@@ -237,7 +254,7 @@ test('run: a file request sends the file to the model, not as prompt text', asyn
   const { d } = deps({ answers: [sampleAnswer()] });
   d.model.complete = async (req) => { seen = req; return { text: JSON.stringify(sampleAnswer()) }; };
   await runAnalysis(fileInput, d);
-  assert.deepEqual(seen.file, { mimeType: 'image/png', data: 'iVBORw0KGgo=' });
+  assert.deepEqual(seen.files, [{ mimeType: 'image/png', data: 'iVBORw0KGgo=' }]);
   assert.doesNotMatch(seen.text, /<material>/);
 });
 

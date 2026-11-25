@@ -3,10 +3,11 @@
 // The material itself is attached by the caller (pasted text, or a PDF / image file part).
 import { SUPPORT_LANGS, TARGET_LANGS } from './languages.js';
 
+// v4 (2026-11-25): up to four attached files (e.g. screenshots of the pages), read as one material in order.
 // v3 (2026-11-21): count "auto" – the model decides how many items are really useful (10–40).
 // v2 (2026-11-21, after the first live run): stricter distractors (complete expressions, same form, must
 // not fit), modern natural English in the gapfill text, no space before punctuation after a gap.
-export const PROMPT_VERSION = 'analyze-v3';
+export const PROMPT_VERSION = 'analyze-v4';
 export const AUTO_MIN = 10;
 export const AUTO_MAX = 40;
 
@@ -16,14 +17,17 @@ Answer only with JSON that matches the given schema.`;
 
 /**
  * opts: { level, count, supportLang, targetLang?, focus?, kind } -> { system, text }
- * kind: 'text' (the material follows in the prompt) or 'file' (attached as a PDF or image).
+ * kind: 'text' (the material follows in the prompt) or 'file' (attached as PDF or image files; fileCount of them).
  */
-export function buildPrompt({ level, count, supportLang, targetLang = 'en', focus = '', kind = 'text', material = '' }) {
+export function buildPrompt({ level, count, supportLang, targetLang = 'en', focus = '', kind = 'text', material = '', fileCount = 1 }) {
   const target = TARGET_LANGS[targetLang];
   const support = SUPPORT_LANGS[supportLang];
   if (!target || !support) throw new Error(`unsupported language: ${targetLang} / ${supportLang}`);
   const where = kind === 'file'
-    ? 'The material is in the attached file. Use only its main reading text or lesson content; ignore page numbers, headers, exercises instructions and answer keys.'
+    ? (fileCount > 1
+      ? `The material is in the ${fileCount} attached files: consecutive parts (pages or screenshots) of one material, in reading order. Treat them as one text; a sentence may continue from one file to the next. `
+      : 'The material is in the attached file. ')
+      + 'Use only its main reading text or lesson content; ignore page numbers, headers, exercises instructions and answer keys.'
     : 'The material is between the <material> tags below.';
   const lines = [
     count === 'auto'

@@ -181,7 +181,7 @@ Firestore, collections prefixed `wn`. The rules block lives in the Hub's `firest
 `// ---- WordNerd` and `// ---- end WordNerd` markers; this repo keeps a copy for the emulators only.
 
 - `wnLists/{listId}` – `ownerUid`, `title`, `topic`, `level`, `targetLang`, `supportLang`, `items[]` (section 5),
-  `text` (the new AI text), `source` (`{ kind: text|pdf|image, title, wordCount }`, never the file),
+  `text` (the new AI text), `source` (`{ kind: text|pdf|image, title, wordCount }`, with `files: n` for more than one file; never the file),
   `createdAt`, `updatedAt`. Owner reads; the analysis function creates; the owner edits allowed fields.
 - `wnRooms/{roomId}` – `ownerUid`, `code`, `listSnapshot` (copy at start, so later edits do not change a
   running set), `games[]` (`{ type, settings }`), `seed`, `status` (open|closed), `expiresAt`, `createdAt`.
@@ -216,8 +216,9 @@ Flow (`functions/analyze.js`, logic in the pure `engines/analysis/`, so it is te
 
 1. Teacher check (signed in, not anonymous) → `teacher-only` / `sign-in`.
 2. Input check (`engines/analysis/input.js`, the same rules run in the browser in F3), before any credit is spent:
-   `kind` `text` (40–2500 words, at most 20 000 characters) or `file` (PDF, PNG, JPEG or WebP, base64 in the
-   request, at most 4 MB before encoding); `level` A1–C1; `supportLang` from `engines/analysis/languages.js`
+   `kind` `text` (40–2500 words, at most 20 000 characters) or `file` (`files`: 1–4 PDF, PNG, JPEG or WebP
+   files in reading order, base64 in the request, each at most 4 MB and 6 MB together before encoding; a single
+   `file` is still accepted; 2026-11-25); `level` A1–C1; `supportLang` from `engines/analysis/languages.js`
    (30 languages); `count` `"auto"` (default since 2026-11-21: the model takes every genuinely useful item, 10–40,
    fewer for a short text, never padded) or a number 10–30; optional `focus` (120 chars) and `title` (80 chars).
    Target language: English only for now.
@@ -366,7 +367,7 @@ Each phase ends with a DEVLOG entry, a demo of what was built and how it was ver
   No accounts, so it lives only inside the room.
 
 - Upload limits: set in F2 as 40–2500 words of text or a 4 MB PDF/image (photo upload included); to revisit after
-  real use.
+  real use. 2026-11-25 (András): up to 4 files (e.g. pasted screenshots of the pages), 6 MB together.
 - Price of `wordnerd/analyze`: to set by András. Measured 2026-11-21 (gemini-3.8-flash, Hubbaloo price table):
   20 words from a 330-word text ≈ 1.1k input + 4.1k output tokens ≈ $0.016 (28 s); 12 words from a PDF ≈ 1.3k + 2.6k
   ≈ $0.011 (18 s). From 2027-01-01 the model price doubles (≈ $0.03). Against the Hub's scale (1 credit ≈ one

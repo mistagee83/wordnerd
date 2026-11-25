@@ -1,4 +1,4 @@
-// Gemini adapter for the analysis: one call, JSON answer bound to a JSON schema, optional file part
+// Gemini adapter for the analysis: one call, JSON answer bound to a JSON schema, optional file parts
 // (PDF or image, inline base64). Uses the generateContent endpoint, because the material may be a file
 // (the sister apps call the Interactions API with text only).
 // Returns { text, usage }; parsing and checks happen in engines/analysis/run.js.
@@ -17,9 +17,9 @@ export function geminiModel({ apiKey, model, schema, thinkingLevel = 'low', fetc
   if (!model) throw new ProviderError('model name missing');
   return {
     name: model,
-    async complete({ system, text, file }) {
+    async complete({ system, text, files = [] }) {
       const parts = [];
-      if (file) parts.push({ inline_data: { mime_type: file.mimeType, data: file.data } });
+      for (const f of files) parts.push({ inline_data: { mime_type: f.mimeType, data: f.data } });
       parts.push({ text });
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), timeoutMs);

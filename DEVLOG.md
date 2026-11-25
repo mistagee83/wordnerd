@@ -486,3 +486,26 @@ Ctrl+V from the Windows clipboard (synthetic events only), Safari/iOS, the real 
 
 Live on 2026-11-25 (approved by András): `main` fast-forwarded to `39dc779`. Checked live: `teacher.js` has the
 paste handler, `app.css` the thumbnail style. Not tried live: a real paste (András tries it).
+
+## Up to four files per list (2026-11-25)
+
+András tried the screenshot paste live and asked for more than one image, at most four.
+- `engines/analysis/input.js`: `kind: 'file'` takes `files` (1–4, reading order; each ≤ 4 MB, together ≤ 6 MB so the
+  callable request stays under ~10 MB after base64). The old single `file` is still accepted (`scripts/live-analyze.mjs`
+  uses it). New reasons `too-many-files`, `files-too-large`. `source` gets `files: n` when there is more than one;
+  `source.kind` is `pdf` if any file is a PDF, else `image`.
+- Prompt **analyze-v4**: with more than one file it says the files are consecutive parts of one material, in reading
+  order, to be read as one text. The single-file wording is unchanged.
+- `run.js` / `functions/llm/gemini.js`: `complete({ files })`, one inline part per file, before the prompt text.
+- New list: a numbered list of the files (thumbnail, name, size, remove ×), "Add another page" (choose with multiple
+  selection, drop several, or paste) until four; "The pages are read as one text, in this order." Pasted
+  screenshots are named "Pasted image 1.png", "…2.png"; a pasted image is shrunk to fit what is left of the 6 MB.
+- Price unchanged (2 credits per list, whatever the number of files).
+
+**Verified**: `npm test` 74 pass (new test for several files); `npm run test:emulator` 16 checks pass; in the
+browser with the emulators (synthetic pastes): four files fill the list and the drop zone goes away, a fifth paste
+says "At most 4 files", removing one renumbers the rest, a 9.65 MB pasted PNG became 1.84 MB; three pasted images
+were analysed into a list (50 → 48 credits), saved with `source.files: 3` and `promptVersion: analyze-v4`.
+**Not verified**: the real model with several images (mock only); a real Ctrl+V; Safari/iOS.
+**Going live needs both**: `firebase deploy --only functions:wordnerd` first (the old function refuses `files`), then
+`main`.
