@@ -10,6 +10,7 @@ import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/12.6.0/fireb
 import { firebase, USE_EMULATORS } from './firebase.js';
 import { HUB_ACCOUNT_URL, publicBaseUrl } from './config.js';
 import { ONE_ACCOUNT_TEXT, authErrorText, isEmail, hubAccountUrl, redeemSso, takeSsoCode } from './hub/sso.js';
+import { HUB_ORIGIN, avatarSrc } from './hub/avatar.js';
 import { h, s } from './games/ui.js';
 import { settingsForm } from './games/settings.js';
 import { balance, costFor } from '/engines/hub/credits.js';
@@ -159,9 +160,11 @@ onAuthStateChanged(fb.auth, async (user) => {
   if (!user && ssoPending && await ssoPending) return; // the Hub link is signing the teacher in
   unsubUser(); unsubPrice();
   S.user = user && !user.isAnonymous ? user : null;
-  S.lists = null; S.list = null; S.draft = null; S.dirty = false;
+  S.lists = null; S.list = null; S.draft = null; S.dirty = false; S.avatar = null;
   if (S.user) {
-    unsubUser = onSnapshot(doc(fb.db, 'users', S.user.uid), (snap) => { S.credits = balance(snap.data()?.credits); renderNamebar(); renderPanelIfNew(); },
+    unsubUser = onSnapshot(doc(fb.db, 'users', S.user.uid), (snap) => {
+      S.credits = balance(snap.data()?.credits); S.avatar = snap.data()?.avatar ?? null; renderNamebar(); renderPanelIfNew();
+    },
       () => { S.credits = null; renderNamebar(); });
     unsubPrice = onSnapshot(doc(fb.db, 'settings', 'credits'), (snap) => { S.price = costFor(snap.data()?.prices, 'wordnerd', 'analyze'); renderPanelIfNew(); },
       () => { S.price = null; });
@@ -309,8 +312,11 @@ function namebarContent() {
   const initials = name.replace(/@.*/, '').split(/[\s._-]+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('') || 'T';
   const c = S.credits;
   const credits = c == null ? '…' : c.unlimited ? 'Unlimited credits' : plural(c.total, 'credit');
+  // The avatar chosen on the Hub (users/{uid}.avatar, image from the Hub); none or an unknown id = the initials.
+  const avatar = avatarSrc(S.avatar, HUB_ORIGIN);
   return [
-    h('span', { class: 'avatar', 'aria-hidden': 'true' }, initials),
+    avatar ? h('img', { class: 'avatar', src: avatar, alt: '', width: '42', height: '42' })
+      : h('span', { class: 'avatar', 'aria-hidden': 'true' }, initials),
     h('span', { class: 'who' }, h('span', { class: 'who-name' }, name), h('span', { class: 'who-credits' }, credits)),
     h('a', { class: 'btn btn-small', href: hubAccountUrl({ returnTo: location.href.split('#')[0] }) || HUB_ACCOUNT_URL }, 'Get credits'),
     h('button', { class: 'link-btn', type: 'button', onclick: () => { if (!S.dirty || confirm('Leave without saving?')) { S.dirty = false; signOut(fb.auth); } } }, 'Sign out'),

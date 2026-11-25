@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const HUB = process.env.HUB_DIR ?? 'D:/dev/Edtechhub';
-const FILES = [['entitlements.js', 'engines/hub'], ['credits.js', 'engines/hub'], ['sso.js', 'public/js/hub']];
+const FILES = [['entitlements.js', 'engines/hub'], ['credits.js', 'engines/hub'], ['sso.js', 'public/js/hub'], ['avatar.js', 'public/js/hub']];
 const check = process.argv.includes('--check');
 const header = (f) => `// COPY of ${HUB}/shared/${f} (Mr. Andrew's EdTech Hub). Do not edit here: change the Hub's file,\n// then run \`npm run sync:hub\` in this repo.\n`;
 
