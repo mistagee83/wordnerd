@@ -8,8 +8,9 @@ import * as crossword from '/js/games/crossword.js';
 import * as hangman from '/js/games/hangman.js';
 import * as gapfill from '/js/games/gapfill.js';
 import * as drowning from '/js/games/drowning.js';
+import * as bridge from '/js/games/bridge.js';
 
-const UI = { memory, matching, wordsearch, crossword, hangman, gapfill, drowning };
+const UI = { memory, matching, wordsearch, crossword, hangman, gapfill, drowning, bridge };
 const params = new URLSearchParams(location.search);
 const id = GAME_IDS.includes(params.get('game')) ? params.get('game') : 'memory';
 // English definitions as clues, not the sample list's Hungarian translations: the landing page is international

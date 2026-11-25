@@ -32,7 +32,7 @@ test('room games: normalised settings, every game must build, no duplicates', ()
   const all = GAME_IDS.map((type) => ({ type, settings: {} }));
   const r = checkRoomGames(sample, all, 'seed');
   assert.equal(r.ok, true);
-  assert.equal(r.games.length, 7);
+  assert.equal(r.games.length, 8);
   assert.equal(r.games[0].settings.grid, 4); // defaults filled in
   assert.deepEqual(checkRoomGames(sample, [], 's'), { ok: false, reason: 'no-games' });
   assert.deepEqual(checkRoomGames(sample, [{ type: 'memory' }, { type: 'memory' }], 's'), { ok: false, reason: 'duplicate-game', type: 'memory' });
@@ -75,6 +75,9 @@ test('stars: one rule per game', () => {
   assert.equal(starsFor('gapfill', { score: 8, max: 11 }), 2);
   assert.equal(starsFor('gapfill', { score: 2, max: 11 }), 0);
   assert.equal(starsFor('drowning', { score: 15, max: 15, survived: true, misses: { w01: 1 } }), 3);
+  assert.equal(starsFor('bridge', { score: 10, max: 10, misses: {} }), 3);
+  assert.equal(starsFor('bridge', { score: 8, max: 10, misses: { w01: 1, w02: 1 } }), 2);
+  assert.equal(starsFor('bridge', { score: 5, max: 10, misses: { w01: 3, w02: 2 } }), 1);
   assert.equal(starsFor('drowning', { score: 4, max: 15, survived: false }), 0);
 });
 
@@ -91,7 +94,7 @@ test('best try counts; tries are counted; the first try\'s misses stay', () => {
 
 test('path summary and open state', () => {
   const p = pathSummary(room, { 0: { stars: 3 }, 2: { stars: 1 } });
-  assert.deepEqual([p.stars, p.maxStars, p.done], [4, 21, 2]);
+  assert.deepEqual([p.stars, p.maxStars, p.done], [4, 24, 2]);
   assert.equal(p.games[1].stars, null);
   assert.equal(isOpen({ status: 'open', expiresAt: 100 }, 50), true);
   assert.equal(isOpen({ status: 'open', expiresAt: 100 }, 100), false);

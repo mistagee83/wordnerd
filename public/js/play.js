@@ -14,8 +14,9 @@ import * as crossword from './games/crossword.js';
 import * as hangman from './games/hangman.js';
 import * as gapfill from './games/gapfill.js';
 import * as drowning from './games/drowning.js';
+import * as bridge from './games/bridge.js';
 
-const UI = { memory, matching, wordsearch, crossword, hangman, gapfill, drowning };
+const UI = { memory, matching, wordsearch, crossword, hangman, gapfill, drowning, bridge };
 const fb = firebase('student');
 const $app = document.getElementById('app');
 const LOGO = '/img/brand/WordNerd_logo.png';

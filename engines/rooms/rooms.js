@@ -6,7 +6,7 @@ import { GAMES, GAME_IDS, generateGame, gameSeed } from '../games/index.js';
 
 export const ROOM_LIMITS = Object.freeze({
   maxDays: 7,
-  maxGames: 7, // each of the seven games at most once in a room
+  maxGames: 8, // each game at most once in a room
   maxPlayers: 80,
   nickname: { min: 2, max: 20 },
   titleChars: 80,
@@ -129,6 +129,9 @@ export function starsFor(type, r, settings = {}) {
     }
     case 'gapfill':
       return ratio === 1 ? 3 : ratio >= 0.7 ? 2 : ratio >= 0.4 ? 1 : 0;
+    case 'bridge': // planks that cracked (wrong choices); every sentence is solved in the end
+      if (r.score === 0 && missCount === 0) return 0;
+      return missCount === 0 ? 3 : missCount <= 2 ? 2 : 1;
     case 'drowning':
       if (r.survived) return missCount <= 2 ? 3 : 2;
       return ratio >= 0.5 ? 1 : 0;

@@ -10,6 +10,7 @@ import { display, guess, newRound, status } from '../engines/games/hangman.js';
 import { checkAll } from '../engines/games/gapfill.js';
 import { isCorrect as drownCorrect, waterLevel } from '../engines/games/drowning.js';
 import { gridLetters } from '../engines/lang.js';
+import { isCorrect as bridgeCorrect } from '../engines/games/bridge.js';
 
 const SEEDS = Array.from({ length: 300 }, (_, i) => `seed-${i}`);
 const byId = Object.fromEntries(list.items.map((it) => [it.id, it]));
@@ -295,4 +296,25 @@ test('word search: directions are balanced (every direction 20–30% on "medium"
   }
   assert.equal(Object.keys(count).length, 4);
   for (const v of Object.values(count)) assert.ok(v / n > 0.2 && v / n < 0.3, JSON.stringify(count));
+});
+
+test('bridge: one plank per example sentence, the answer and its distractors as options', () => {
+  const p = generateGame('bridge', list, { words: 8 }, 'b');
+  assert.equal(p.ok, true);
+  assert.equal(p.queue.length, 8);
+  for (const e of p.queue) {
+    const it = byId[e.itemId];
+    assert.equal(e.before + '___' + e.after, it.example.text);
+    assert.ok(e.options.includes(it.example.answer));
+    assert.equal(new Set(e.options).size, e.options.length);
+    assert.equal(e.options.length, 4);
+    assert.ok(bridgeCorrect(e, it.example.answer));
+    assert.ok(!bridgeCorrect(e, e.options.find((o) => o !== it.example.answer)));
+  }
+  assert.deepEqual(generateGame('bridge', list, { words: 8 }, 'b'), p); // deterministic
+  // hand-added words (no example) and items with fewer than two distractors are skipped
+  const thin = { ...list, items: list.items.map((it, i) => (i < 17 ? { ...it, example: undefined } : it)) };
+  assert.equal(generateGame('bridge', thin, {}, 'b').ok, false);
+  const dup = { ...list, items: list.items.map((it) => ({ ...it, distractors: [it.example.answer, it.example.answer.toUpperCase(), 'x'] })) };
+  assert.equal(generateGame('bridge', dup, {}, 'b').ok, false);
 });

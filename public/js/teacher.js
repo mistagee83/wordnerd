@@ -26,8 +26,9 @@ import * as crossword from './games/crossword.js';
 import * as hangman from './games/hangman.js';
 import * as gapfill from './games/gapfill.js';
 import * as drowning from './games/drowning.js';
+import * as bridge from './games/bridge.js';
 
-const UI = { memory, matching, wordsearch, crossword, hangman, gapfill, drowning };
+const UI = { memory, matching, wordsearch, crossword, hangman, gapfill, drowning, bridge };
 const fb = firebase('teacher');
 const $app = document.getElementById('app');
 const LOGO = '/img/brand/WordNerd_logo.png';
@@ -64,7 +65,7 @@ const REASON_TEXT = {
   'too-many-words': `A list can have at most ${EDIT_LIMITS.maxItems} words.`,
   'unknown-word': 'The list changed meanwhile. Please reload the page.',
   'no-games': 'Choose at least one game.',
-  'too-many-games': 'A room can have at most seven games.',
+  'too-many-games': 'A room can have at most eight games.',
   'duplicate-game': 'Each game can be in a room once.',
   'unknown-game': 'Unknown game. Please reload the page.',
   'game-unavailable': 'One of the games cannot be built from this list.',
@@ -82,6 +83,7 @@ const GAME_BLURB = {
   hangman: 'Guess the words before the balloons pop.',
   gapfill: 'Drag the words into the text.',
   drowning: 'Type the word before the box fills with water.',
+  bridge: 'Choose the word that fits the sentence and build a bridge.',
 };
 
 // ---------------------------------------------------------------------------------------------------
@@ -334,7 +336,7 @@ function listsView() {
   if (!S.lists.length) {
     return [head, errorLine(), h('div', { class: 'empty' },
       h('p', {}, 'No lists yet.'),
-      h('p', { class: 'muted' }, "Paste a reading text or upload a page. You'll get a word list and seven games from it."),
+      h('p', { class: 'muted' }, "Paste a reading text or upload a page. You'll get a word list and eight games from it."),
       h('a', { href: '#new', class: 'btn btn-primary' }, 'Make your first list'))];
   }
   return [head, errorLine(), h('ul', { class: 'cards' }, S.lists.map((l) => h('li', {},
