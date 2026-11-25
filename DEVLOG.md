@@ -483,3 +483,6 @@ Asked by András: create a list by pasting an image with Ctrl+V (not a ready-mad
 image.png" with a thumbnail; a 9.65 MB PNG became a 1.84 MB JPEG; a text paste still goes into the text box;
 a pasted screenshot was analysed into a list (50 → 48 credits). `npm test` 73 pass. **Not verified**: a real
 Ctrl+V from the Windows clipboard (synthetic events only), Safari/iOS, the real model reading a screenshot.
+
+Live on 2026-11-25 (approved by András): `main` fast-forwarded to `39dc779`. Checked live: `teacher.js` has the
+paste handler, `app.css` the thumbnail style. Not tried live: a real paste (András tries it).
