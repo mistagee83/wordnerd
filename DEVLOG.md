@@ -509,3 +509,8 @@ were analysed into a list (50 → 48 credits), saved with `source.files: 3` and 
 **Not verified**: the real model with several images (mock only); a real Ctrl+V; Safari/iOS.
 **Going live needs both**: `firebase deploy --only functions:wordnerd` first (the old function refuses `files`), then
 `main`.
+
+Live on 2026-11-25 (approved by András): `firebase deploy --only functions:wordnerd` (all 15 functions updated),
+then `main` fast-forwarded to `a247e95`. Checked live: `teacher.js` (file list), `engines/analysis/input.js`
+(`maxFiles: 4`) and `app.css` served. Not tried live: an analysis with several files (needs a signed-in teacher
+and spends credits; András tries it).
