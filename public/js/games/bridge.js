@@ -9,16 +9,16 @@ const DECK = 64; // y of the bridge deck
 const L = 44; // left cliff edge
 const R = W - 44; // right cliff edge
 
+// the WordNerd figure from the old game (mentés/images/hangman/nerd-1.png, cropped and scaled; SPEC 10 allows the
+// old WordNerd game graphics), feet at the group's origin
+const NERD = { src: '/img/games/nerd.webp', w: 96, h: 260 };
+const NERD_H = 56;
 function walker() {
+  const w = (NERD.w / NERD.h) * NERD_H;
   return s('g', { class: 'br-walker' },
     s('g', { class: 'br-walker-body' },
-      s('line', { x1: -4, y1: 0, x2: -2, y2: -12, stroke: '#2b231b', 'stroke-width': 3, 'stroke-linecap': 'round' }),
-      s('line', { x1: 4, y1: 0, x2: 2, y2: -12, stroke: '#2b231b', 'stroke-width': 3, 'stroke-linecap': 'round' }),
-      s('rect', { x: -6, y: -26, width: 12, height: 15, rx: 5, fill: '#e2702b' }),
-      s('circle', { cx: 0, cy: -33, r: 7, fill: '#f3c99b' }),
-      s('path', { d: 'M-11 -39 L0 -44 L11 -39 L0 -34 Z', fill: '#1f1913' }),
-      s('path', { d: 'M8 -39 L9 -31', stroke: '#f8b856', 'stroke-width': 1.4 }),
-      s('circle', { cx: 9, cy: -30, r: 1.6, fill: '#f8b856' })));
+      s('ellipse', { cx: 0, cy: 0, rx: w * 0.55, ry: 2.2, fill: 'rgb(0 0 0 / .25)' }),
+      s('image', { href: NERD.src, x: -w / 2, y: -NERD_H + 1, width: w, height: NERD_H, preserveAspectRatio: 'xMidYMax meet' })));
 }
 
 function scene(n) {
