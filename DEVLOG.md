@@ -602,3 +602,5 @@ Hub admin (Claude in Chrome, András's admin session): the WordNerd product's ta
 eight games, name Bridge, the class goal, up to four pages and up to 40 words; saved, and the public page
 (`mrandrewshub.com/p/wordnerd`) shows it with no "seven" left. Not tried live: a room with a class goal and Bridge
 on real phones (András tries it).
+
+András tried it live on 2026-11-25 (room with a class goal and Bridge, on phones): everything works.
