@@ -592,3 +592,13 @@ text, the more words, up to 40); step 3 (optional class goal); "Eight games from
 screenshot (`scripts/shots.mjs bridge`, 390×440); a "A goal for the whole class" feature. Cover (`og-image.png`)
 re-taken from `dev/cover.html` ("Eight games"). No "seven games" left in `public/` or `scripts/` (only "seven
 days"). The Hub product text (tagline, description) says seven games: updated in the Hub admin after the deploy.
+
+Live on 2026-11-25 (approved by András): `firebase deploy --only functions:wordnerd` (prompt v5 and counts up to
+40, Memory stars, Bridge, eight games per room, class goal), then `main` fast-forwarded to `09a7288`. Checked
+live: the landing page says "Eight games from one list" with the Bridge card; `js/games/bridge.js`,
+`engines/games/bridge.js`, `img/games/nerd.webp`, `img/landing/bridge.webp` and the new `og-image.png` served with
+the right types; `play.js` has the class goal bar, `teacher.js` the 35/40 counts, `rooms.js` the new Memory rule.
+Hub admin (Claude in Chrome, András's admin session): the WordNerd product's tagline and description now say
+eight games, name Bridge, the class goal, up to four pages and up to 40 words; saved, and the public page
+(`mrandrewshub.com/p/wordnerd`) shows it with no "seven" left. Not tried live: a room with a class goal and Bridge
+on real phones (András tries it).
