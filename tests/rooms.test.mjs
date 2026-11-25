@@ -56,8 +56,10 @@ test('results: shape and bounds are checked, stars are computed, unknown fields 
 
 test('stars: one rule per game', () => {
   assert.equal(starsFor('memory', { score: 8, max: 8, moves: 10 }), 3);
-  assert.equal(starsFor('memory', { score: 8, max: 8, moves: 16 }), 2);
-  assert.equal(starsFor('memory', { score: 8, max: 8, moves: 30 }), 1);
+  assert.equal(starsFor('memory', { score: 8, max: 8, moves: 17 }), 3); // 2.2 per pair
+  assert.equal(starsFor('memory', { score: 8, max: 8, moves: 18 }), 2);
+  assert.equal(starsFor('memory', { score: 8, max: 8, moves: 25 }), 2); // 3.2 per pair
+  assert.equal(starsFor('memory', { score: 8, max: 8, moves: 26 }), 1);
   assert.equal(starsFor('matching', { score: 6, max: 6 }), 3);
   assert.equal(starsFor('matching', { score: 5, max: 6 }), 2);
   assert.equal(starsFor('matching', { score: 0, max: 6 }), 0);

@@ -105,9 +105,10 @@ export function starsFor(type, r, settings = {}) {
   const ratio = r.max ? r.score / r.max : 0;
   const missCount = Object.values(r.misses ?? {}).reduce((a, b) => a + b, 0);
   switch (type) {
-    case 'memory': { // moves against pairs: a perfect game takes one move per pair
+    case 'memory': { // moves against pairs. Even perfect recall needs about 1.6 moves per pair on average (the
+      // cards are unknown at first), so 3 stars allow 2.2 per pair (2026-11-25; 1.5 was almost unreachable)
       const moves = r.moves ?? r.max + missCount;
-      return moves <= r.max * 1.5 ? 3 : moves <= r.max * 2.2 ? 2 : 1;
+      return moves <= r.max * 2.2 ? 3 : moves <= r.max * 3.2 ? 2 : 1;
     }
     case 'matching': // first-try matches
       return ratio === 1 ? 3 : ratio >= 0.75 ? 2 : r.score > 0 ? 1 : 0;

@@ -534,3 +534,11 @@ No code capped at 15.
 underestimates the length a little). 0 warnings in all three.
 **Note**: longer lists take longer (about a minute for 40; the waiting screen already says up to a minute).
 **Going live needs both**: `firebase deploy --only functions:wordnerd` (prompt, input check 10–40) first, then `main`.
+
+## Memory: 3 stars reachable (2026-11-25)
+
+András: three stars in Memory were almost impossible. 3 stars needed at most 1.5 moves per pair, but even perfect
+recall needs about 1.6 per pair on average (every card is unknown at first). A simulation (3000 games per case)
+with perfect recall reached 1.5 in 32 % of 12-pair games and 12 % of 18-pair games; with a little forgetting, 0–5 %.
+Now 3 stars ≤ 2.2 moves per pair (the old 2-star limit), 2 stars ≤ 3.2, else 1 (`engines/rooms/rooms.js`,
+computed on the server). Results already saved keep their stars. `npm test` 74 pass.
